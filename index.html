@@ -251,6 +251,8 @@ districts.push({p1:[],p2:[],flooded:false})
 
 function renderHand(){
 
+if(!myPlayer) return
+
 handDiv.innerHTML=""
 
 hands[myPlayer-1].forEach((c,i)=>{
