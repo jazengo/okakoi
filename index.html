@@ -129,6 +129,8 @@ if(!gameStarted){
 gameStarted=true
 log("ゲーム開始")
 
+createBoard()
+
 if(myPlayer==1){
 startGame()
 }
@@ -223,6 +225,7 @@ westBank.appendChild(w)
 function renderHand(){
 
 if(!myPlayer)return
+if(!hands || !hands[myPlayer-1]) return
 
 handDiv.innerHTML=""
 
@@ -290,7 +293,8 @@ currentPlayer
 roomRef.child("state").on("value",snap=>{
 
 const data=snap.val()
-if(!data)return
+if(!data || !data.districts)return
+
 
 if(eastBank.children.length===0){
 createBoard()
