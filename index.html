@@ -326,6 +326,11 @@ const data=snap.val()
 
 if(!data)return
 
+// 盤面がまだ無ければ作る
+if(eastBank.children.length===0){
+createBoard()
+}
+
 districts=data.districts
 hands=data.hands
 currentPlayer=data.currentPlayer
