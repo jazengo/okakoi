@@ -137,14 +137,23 @@ roomRef.child("log").push().onDisconnect().set("player"+myPlayer+" left")
 
 }
 
-if(myPlayer==1){
+roomRef.child("players").once("value").then(snap=>{
+
+const players=snap.val()
+
+if(players.p1 && players.p2){
+
 startGame()
+
 }else{
+
 createBoard()
-renderHand()
+log("相手プレイヤーを待っています")
+
 }
 
 })
+
 
 
 
@@ -366,6 +375,7 @@ renderHand()
 }
 
 }
+
 
 /* ========= 初期化 ========= */
 
