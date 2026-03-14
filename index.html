@@ -226,7 +226,6 @@ function createBoard(){
 eastBank.innerHTML=""
 westBank.innerHTML=""
 
-districts=[]
 
 for(let i=0;i<DISTRICTS;i++){
 
@@ -381,6 +380,12 @@ if(myPlayer==1){
 
   createDeck()
 
+  districts=[]
+
+  for(let i=0;i<DISTRICTS;i++){
+    districts.push({p1:[],p2:[],flooded:false})
+  }
+
   hands=[[],[]]
 
   for(let p=0;p<2;p++){
@@ -392,24 +397,6 @@ if(myPlayer==1){
   }
 
   saveGame()
-  drawBoard()
-renderHand()
-
-}else{
-
-  // player2はstateを待つ
-  roomRef.child("state").on("value",snap=>{
-    const data=snap.val()
-    if(!data)return
-
-    districts=data.districts
-    hands=data.hands
-    currentPlayer=data.currentPlayer
-
-    drawBoard()
-    renderHand()
-  })
-
 }
 
 }
