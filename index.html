@@ -143,7 +143,11 @@ const players=snap.val()
 
 if(players.p1 && players.p2){
 
+log("ゲーム開始")
+
+if(myPlayer==1){
 startGame()
+}
 
 }else{
 
@@ -359,9 +363,9 @@ alert("URLを友達に送ってください")
 
 function startGame(){
 
-createBoard()
-
 if(myPlayer==1){
+
+createBoard()
 
   createDeck()
 
