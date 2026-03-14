@@ -8,21 +8,18 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
 <script>
-
-const firebaseConfig = {
-  apiKey: "AIzaSyC9tAyMDg-vWo2HacWRV3zODrfqIIoNHuw",
-  authDomain: "okakoi.firebaseapp.com",
-  databaseURL: "https://okakoi-default-rtdb.firebaseio.com",
-  projectId: "okakoi",
-  storageBucket: "okakoi.firebasestorage.app",
-  messagingSenderId: "359327536081",
-  appId: "1:359327536081:web:5e4c85e194f935a01bc6f0",
-  measurementId: "G-LDYT929YM2"
-};
+const firebaseConfig={
+apiKey:"AIzaSyC9tAyMDg-vWo2HacWRV3zODrfqIIoNHuw",
+authDomain:"okakoi.firebaseapp.com",
+databaseURL:"https://okakoi-default-rtdb.firebaseio.com",
+projectId:"okakoi",
+storageBucket:"okakoi.firebasestorage.app",
+messagingSenderId:"359327536081",
+appId:"1:359327536081:web:5e4c85e194f935a01bc6f0"
+}
 
 firebase.initializeApp(firebaseConfig)
-const db = firebase.database()
-
+const db=firebase.database()
 </script>
 
 <style>
@@ -68,13 +65,12 @@ border:2px solid #333;
 height:300px;
 overflow:auto;
 }
-
 </style>
 </head>
 
 <body>
 
-<h1>御囲堤ゲーム（仮） ONLINE</h1>
+<h1>御囲堤ゲーム ONLINE</h1>
 
 <button onclick="copyURL()">招待URLコピー</button>
 
@@ -90,72 +86,57 @@ overflow:auto;
 
 <script>
 
-/* ========= ルーム ========= */
+/* ルーム */
 
 const params=new URLSearchParams(location.search)
-
 let room=params.get("room")
 
 if(!room){
-
 room=Math.random().toString(36).substring(2,7)
 location.search="?room="+room
-
 }
 
 const roomRef=db.ref("rooms/"+room)
 
 let myPlayer=null
+let gameStarted=false
 
 roomRef.child("players").transaction(players=>{
 
-if(!players) players = {}
+if(!players) players={}
 
 if(!players.p1){
-
 players.p1=true
 myPlayer=1
-
-}else if(!players.p2){
-
+}
+else if(!players.p2){
 players.p2=true
 myPlayer=2
-
 }
 
 return players
 
 }).then(()=>{
 
-if(myPlayer){
-
-roomRef.child("players/p"+myPlayer).onDisconnect().remove()
-
-roomRef.child("log").push("player"+myPlayer+" joined")
-
-roomRef.child("log").push().onDisconnect().set("player"+myPlayer+" left")
-
-}
-
 roomRef.child("players").on("value",snap=>{
 
 const players=snap.val()
+if(!players)return
 
-if(!players) return
-
-// 2人そろった
 if(players.p1 && players.p2){
 
+if(!gameStarted){
+gameStarted=true
 log("ゲーム開始")
 
-// player1だけがゲームを作る
 if(myPlayer==1){
 startGame()
 }
 
+}
+
 }else{
 
-// 1人だけ
 createBoard()
 log("相手プレイヤーを待っています")
 
@@ -165,13 +146,7 @@ log("相手プレイヤーを待っています")
 
 })
 
-
-
-
-
-
-
-/* ========= ゲーム ========= */
+/* ゲーム */
 
 const DISTRICTS=7
 
@@ -188,22 +163,19 @@ const handDiv=document.getElementById("hand")
 const logDiv=document.getElementById("log")
 
 function log(t){
-
 let d=document.createElement("div")
 d.innerText=t
 logDiv.prepend(d)
-
 }
 
-/* ========= デッキ ========= */
+/* デッキ */
 
 function createDeck(){
 
 function add(n,p,c){
-
-for(let i=0;i<c;i++)
+for(let i=0;i<c;i++){
 floodDeck.push({name:n,point:p})
-
+}
 }
 
 add("ハザードマップ",1,24)
@@ -216,16 +188,14 @@ floodDeck.sort(()=>Math.random()-0.5)
 }
 
 function drawFlood(){return floodDeck.pop()}
-
 function drawVillage(){return {name:"集落",point:0}}
 
-/* ========= ボード ========= */
+/* ボード */
 
 function createBoard(){
 
 eastBank.innerHTML=""
 westBank.innerHTML=""
-
 
 for(let i=0;i<DISTRICTS;i++){
 
@@ -236,43 +206,40 @@ e.className="district"
 w.className="district"
 
 if(myPlayer==1){
-  e.onclick=()=>build(i)
+e.onclick=()=>build(i)
 }else{
-  w.onclick=()=>build(i)
+w.onclick=()=>build(i)
 }
 
 eastBank.appendChild(e)
 westBank.appendChild(w)
 
-
-
-}
 }
 
-/* ========= 手札 ========= */
+}
+
+/* 手札 */
 
 function renderHand(){
 
-if(!myPlayer) return
+if(!myPlayer)return
 
 handDiv.innerHTML=""
 
 hands[myPlayer-1].forEach((c,i)=>{
 
 let d=document.createElement("div")
-
 d.className="handCard"
 
-if(i==selectedCard)
+if(i==selectedCard){
 d.classList.add("selected")
+}
 
 d.innerHTML=c.name+"<br>"+c.point
 
 d.onclick=()=>{
-
 selectedCard=i
 renderHand()
-
 }
 
 handDiv.appendChild(d)
@@ -281,18 +248,16 @@ handDiv.appendChild(d)
 
 }
 
-/* ========= 建設 ========= */
+/* 建設 */
 
 function build(i){
 
-if(selectedCard==null) return
+if(selectedCard==null)return
 
 roomRef.child("state").transaction(state=>{
 
-if(!state) return state
-
-// 自分のターンじゃないならキャンセル
-if(state.currentPlayer!==myPlayer) return
+if(!state)return state
+if(state.currentPlayer!==myPlayer)return
 
 let card=state.hands[myPlayer-1].splice(selectedCard,1)[0]
 
@@ -308,29 +273,25 @@ selectedCard=null
 
 }
 
-/* ========= 保存 ========= */
+/* 保存 */
 
 function saveGame(){
 
 roomRef.child("state").set({
-
 districts,
 hands,
 currentPlayer
-
 })
 
 }
 
-/* ========= 同期 ========= */
+/* 同期 */
 
 roomRef.child("state").on("value",snap=>{
 
 const data=snap.val()
-
 if(!data)return
 
-// 盤面がまだ無ければ作る
 if(eastBank.children.length===0){
 createBoard()
 }
@@ -344,7 +305,7 @@ renderHand()
 
 })
 
-/* ========= 表示 ========= */
+/* 表示 */
 
 function drawBoard(){
 
@@ -353,58 +314,50 @@ let west=westBank.children
 
 for(let i=0;i<DISTRICTS;i++){
 
-let e=east[i]
-let w=west[i]
-
-e.innerHTML="西:"+districts[i].p1.length
-w.innerHTML="東:"+districts[i].p2.length
+east[i].innerHTML="西:"+districts[i].p1.length
+west[i].innerHTML="東:"+districts[i].p2.length
 
 }
 
 }
 
-/* ========= URLコピー ========= */
+/* URLコピー */
 
 function copyURL(){
-
 navigator.clipboard.writeText(location.href)
 alert("URLを友達に送ってください")
-
 }
+
+/* ゲーム開始 */
 
 function startGame(){
 
 createBoard()
 
-if(myPlayer==1){
+createDeck()
 
-  createDeck()
+districts=[]
+for(let i=0;i<DISTRICTS;i++){
+districts.push({p1:[],p2:[],flooded:false})
+}
 
-  districts=[]
+hands=[[],[]]
 
-  for(let i=0;i<DISTRICTS;i++){
-    districts.push({p1:[],p2:[],flooded:false})
-  }
+for(let p=0;p<2;p++){
 
-  hands=[[],[]]
+for(let i=0;i<4;i++){
+hands[p].push(drawFlood())
+}
 
-  for(let p=0;p<2;p++){
-    for(let i=0;i<4;i++)
-      hands[p].push(drawFlood())
-
-    for(let i=0;i<3;i++)
-      hands[p].push(drawVillage())
-  }
-
-  saveGame()
+for(let i=0;i<3;i++){
+hands[p].push(drawVillage())
 }
 
 }
 
-/* ========= 初期化 ========= */
+saveGame()
 
-
-
+}
 
 </script>
 
