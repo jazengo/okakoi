@@ -141,16 +141,18 @@ roomRef.child("players").on("value",snap=>{
 
 const players=snap.val()
 
+if(!players) return
+
+// 2人そろった
 if(players.p1 && players.p2){
 
 log("ゲーム開始")
 
-if(myPlayer==1){
 startGame()
-}
 
 }else{
 
+// 1人だけ
 createBoard()
 log("相手プレイヤーを待っています")
 
