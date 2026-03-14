@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>OKAKOI ONLINE</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<script>
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC9tAyMDg-vWo2HacWRV3zODrfqIIoNHuw",
+  authDomain: "okakoi.firebaseapp.com",
+  databaseURL: "https://okakoi-default-rtdb.firebaseio.com",
+  projectId: "okakoi",
+  storageBucket: "okakoi.firebasestorage.app",
+  messagingSenderId: "359327536081",
+  appId: "1:359327536081:web:5e4c85e194f935a01bc6f0",
+  measurementId: "G-LDYT929YM2"
+};
+
+firebase.initializeApp(firebaseConfig)
+const db = firebase.database()
+
+</script>
+
+<style>
+body{
+font-family:sans-serif;
+background:#dff2ff;
+text-align:center;
+}
+
+#container{
+display:grid;
+grid-template-columns:1fr 140px 1fr 260px;
+gap:6px;
+padding:6px;
+}
+
+.district{
+background:#eaffea;
+border:3px solid #333;
+border-radius:12px;
+padding:4px;
+min-height:80px;
+}
+
+.handCard{
+display:inline-block;
+background:white;
+border:3px solid #333;
+border-radius:12px;
+width:110px;
+height:140px;
+margin:6px;
+cursor:pointer;
+}
+
+.selected{
+outline:4px solid orange;
+}
+
+#log{
+background:white;
+border:2px solid #333;
+height:300px;
+overflow:auto;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>治水ボードゲーム ONLINE</h1>
+
+<button onclick="copyURL()">招待URLコピー</button>
+
+<div id="container">
+<div id="eastBank"></div>
+<div id="river"></div>
+<div id="westBank"></div>
+<div id="log"></div>
+</div>
+
+<h3>手札</h3>
+<div id="hand"></div>
+
+<script>
+
+/* ========= ルーム ========= */
+
+const params=new URLSearchParams(location.search)
+
+let room=params.get("room")
+
+if(!room){
+
+room=Math.random().toString(36).substring(2,7)
+location.search="?room="+room
+
+}
+
+const roomRef=db.ref("rooms/"+room)
+
+let myPlayer=null
+
+roomRef.child("players").transaction(players=>{
+
+if(!players) players = {}
+
+if(!players.p1){
+
+players.p1=true
+myPlayer=1
+
+}else if(!players.p2){
+
+players.p2=true
+myPlayer=2
+
+}
+
+return players
+
+}).then(()=>{
+
+if(myPlayer){
+
+roomRef.child("players/p"+myPlayer).onDisconnect().remove()
+
+roomRef.child("log").push("player"+myPlayer+" joined")
+
+roomRef.child("log").push().onDisconnect().set("player"+myPlayer+" left")
+
+}
+
+startGame()
+
+})
+
+
+
+
+
+
+
+/* ========= ゲーム ========= */
+
+const DISTRICTS=7
+
+let districts=[]
+let hands=[[],[]]
+let floodDeck=[]
+
+let currentPlayer=1
+let selectedCard=null
+
+const eastBank=document.getElementById("eastBank")
+const westBank=document.getElementById("westBank")
+const handDiv=document.getElementById("hand")
+const logDiv=document.getElementById("log")
+
+function log(t){
+
+let d=document.createElement("div")
+d.innerText=t
+logDiv.prepend(d)
+
+}
+
+/* ========= デッキ ========= */
+
+function createDeck(){
+
+function add(n,p,c){
+
+for(let i=0;i<c;i++)
+floodDeck.push({name:n,point:p})
+
+}
+
+add("ハザードマップ",1,24)
+add("水門",2,18)
+add("堤防",3,13)
+add("ダム",4,8)
+
+floodDeck.sort(()=>Math.random()-0.5)
+
+}
+
+function drawFlood(){return floodDeck.pop()}
+
+function drawVillage(){return {name:"集落",point:0}}
+
+/* ========= ボード ========= */
+
+function createBoard(){
+
+districts=[]
+
+for(let i=0;i<DISTRICTS;i++){
+
+let e=document.createElement("div")
+let w=document.createElement("div")
+
+e.className="district"
+w.className="district"
+
+if(myPlayer==1){
+  e.onclick=()=>build(i)
+}else{
+  w.onclick=()=>build(i)
+}
+
+eastBank.appendChild(e)
+westBank.appendChild(w)
+
+districts.push({p1:[],p2:[],flooded:false})
+
+}
+}
+
+/* ========= 手札 ========= */
+
+function renderHand(){
+
+handDiv.innerHTML=""
+
+hands[myPlayer-1].forEach((c,i)=>{
+
+let d=document.createElement("div")
+
+d.className="handCard"
+
+if(i==selectedCard)
+d.classList.add("selected")
+
+d.innerHTML=c.name+"<br>"+c.point
+
+d.onclick=()=>{
+
+selectedCard=i
+renderHand()
+
+}
+
+handDiv.appendChild(d)
+
+})
+
+}
+
+/* ========= 建設 ========= */
+
+function build(i){
+
+if(selectedCard==null) return
+
+roomRef.child("state").transaction(state=>{
+
+if(!state) return state
+
+// 自分のターンじゃないならキャンセル
+if(state.currentPlayer!==myPlayer) return
+
+let card=state.hands[myPlayer-1].splice(selectedCard,1)[0]
+
+state.districts[i]["p"+myPlayer].push(card)
+
+state.currentPlayer=myPlayer==1?2:1
+
+return state
+
+})
+
+selectedCard=null
+
+}
+
+/* ========= 保存 ========= */
+
+function saveGame(){
+
+roomRef.child("state").set({
+
+districts,
+hands,
+currentPlayer
+
+})
+
+}
+
+/* ========= 同期 ========= */
+
+roomRef.child("state").on("value",snap=>{
+
+const data=snap.val()
+
+if(!data)return
+
+districts=data.districts
+hands=data.hands
+currentPlayer=data.currentPlayer
+
+drawBoard()
+renderHand()
+
+})
+
+/* ========= 表示 ========= */
+
+function drawBoard(){
+
+let east=eastBank.children
+let west=westBank.children
+
+for(let i=0;i<DISTRICTS;i++){
+
+let e=east[i]
+let w=west[i]
+
+e.innerHTML="西:"+districts[i].p1.length
+w.innerHTML="東:"+districts[i].p2.length
+
+}
+
+}
+
+/* ========= URLコピー ========= */
+
+function copyURL(){
+
+navigator.clipboard.writeText(location.href)
+alert("URLを友達に送ってください")
+
+}
+
+function startGame(){
+
+if(myPlayer==1){
+
+  createDeck()
+  createBoard()
+
+  hands=[[],[]]
+
+  for(let p=0;p<2;p++){
+    for(let i=0;i<4;i++)
+      hands[p].push(drawFlood())
+
+    for(let i=0;i<3;i++)
+      hands[p].push(drawVillage())
+  }
+
+  saveGame()
+
+}else{
+
+  createBoard()
+
+}
+
+}
+
+/* ========= 初期化 ========= */
+
+
+
+
+</script>
+
+</body>
+</html>
