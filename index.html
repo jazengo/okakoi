@@ -341,10 +341,11 @@ alert("URLを友達に送ってください")
 
 function startGame(){
 
+createBoard()
+
 if(myPlayer==1){
 
   createDeck()
-  createBoard()
 
   hands=[[],[]]
 
@@ -357,10 +358,6 @@ if(myPlayer==1){
   }
 
   saveGame()
-
-}else{
-
-  createBoard()
 
 }
 
