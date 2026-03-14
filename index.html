@@ -137,7 +137,7 @@ roomRef.child("log").push().onDisconnect().set("player"+myPlayer+" left")
 
 }
 
-roomRef.child("players").once("value").then(snap=>{
+roomRef.child("players").on("value",snap=>{
 
 const players=snap.val()
 
