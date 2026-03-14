@@ -309,13 +309,18 @@ renderHand()
 
 function drawBoard(){
 
+if(!districts || districts.length < DISTRICTS) return
+
 let east=eastBank.children
 let west=westBank.children
 
 for(let i=0;i<DISTRICTS;i++){
 
-east[i].innerHTML="西:"+districts[i].p1.length
-west[i].innerHTML="東:"+districts[i].p2.length
+let e=east[i]
+let w=west[i]
+
+e.innerHTML="西:"+districts[i].p1.length
+w.innerHTML="東:"+districts[i].p2.length
 
 }
 
