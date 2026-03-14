@@ -388,10 +388,24 @@ if(myPlayer==1){
 
   saveGame()
 
-}
+}else{
+
+  // player2はstateを待つ
+  roomRef.child("state").once("value").then(snap=>{
+    const data=snap.val()
+    if(!data)return
+
+    districts=data.districts
+    hands=data.hands
+    currentPlayer=data.currentPlayer
+
+    drawBoard()
+    renderHand()
+  })
 
 }
 
+}
 
 /* ========= 初期化 ========= */
 
