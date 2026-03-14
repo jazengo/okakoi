@@ -137,10 +137,13 @@ roomRef.child("log").push().onDisconnect().set("player"+myPlayer+" left")
 
 }
 
+if(myPlayer==1){
 startGame()
+}else{
+createBoard()
+}
 
 })
-
 
 
 
