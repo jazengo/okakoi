@@ -74,7 +74,7 @@ overflow:auto;
 
 <body>
 
-<h1>治水ボードゲーム ONLINE</h1>
+<h1>御囲堤ゲーム（仮） ONLINE</h1>
 
 <button onclick="copyURL()">招待URLコピー</button>
 
@@ -398,7 +398,7 @@ renderHand()
 }else{
 
   // player2はstateを待つ
-  roomRef.child("state").once("value").then(snap=>{
+  roomRef.child("state").on("value",snap=>{
     const data=snap.val()
     if(!data)return
 
