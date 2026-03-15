@@ -328,15 +328,18 @@ onValue(ref(db,"rooms/"+roomId+"/players"), snap => {
   // ★2人そろったらゲーム開始
   if(players.p1 && players.p2 && !gameStarted){
 
-     gameStarted = true
+  gameStarted = true
 
-     if(playerNumber==1){
+  if(playerNumber==1){
 
-        createDeck()
-        createBoard()
-        budgetPhase()
-        drawBoard()
-        syncGame()
+    createDeck()
+    createBoard()
+
+    // 手札配布
+    budgetPhase()
+
+    drawBoard()
+    syncGame()
 
      }
 
@@ -633,6 +636,7 @@ hands[p].push(drawVillage())
 }
 
 renderHand()
+syncGame()
 
 }
 
