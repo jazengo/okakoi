@@ -229,15 +229,18 @@ function score(cards){
 function drawBoard(){
 
  if(!state) return
- if(!state.districts) return
- if(!Array.isArray(state.districts)) return
+
+ const districts = state.districts
+
+ if(!Array.isArray(districts)) return
 
  westBank.innerHTML=""
  eastBank.innerHTML=""
 
- state.districts.forEach((d,i)=>{
+ for(let i=0;i<districts.length;i++){
 
-  if(!d) return
+  const d = districts[i]
+  if(!d) continue
 
   const w=document.createElement("div")
   const e=document.createElement("div")
@@ -245,13 +248,14 @@ function drawBoard(){
   w.className="district"
   e.className="district"
 
-w.onclick=()=>{
- if(playerNumber===1) build(i)
-}
+  w.onclick=()=>{
+   if(playerNumber===1) build(i)
+  }
 
-e.onclick=()=>{
- if(playerNumber===2) build(i)
-}
+  e.onclick=()=>{
+   if(playerNumber===2) build(i)
+  }
+
   const p1score=score(d.p1)
   const p2score=score(d.p2)
 
@@ -260,11 +264,9 @@ e.onclick=()=>{
 
   westBank.appendChild(w)
   eastBank.appendChild(e)
-
- })
+ }
 
  updateTurnDisplay()
-
 }
 
 /* -----------------------------
