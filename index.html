@@ -229,11 +229,15 @@ function score(cards){
 function drawBoard(){
 
  if(!state) return
+ if(!state.districts) return
+ if(!Array.isArray(state.districts)) return
 
  westBank.innerHTML=""
  eastBank.innerHTML=""
 
  state.districts.forEach((d,i)=>{
+
+  if(!d) return
 
   const w=document.createElement("div")
   const e=document.createElement("div")
@@ -273,7 +277,9 @@ function renderHand(){
 
  handDiv.innerHTML=""
 
- const hand=state.hands[playerNumber-1]
+if(!state.hands) return
+const hand=state.hands[playerNumber-1]
+if(!Array.isArray(hand)) return
 
  if(!hand) return
 
