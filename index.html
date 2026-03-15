@@ -7,7 +7,11 @@
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+/* -----------------------------
+ Firebase
+----------------------------- */
 
 const firebaseConfig = {
  apiKey: "AIzaSyC9tAyMDg-vWo2HacWRV3zODrfqIIoNHuw",
@@ -22,6 +26,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+/* -----------------------------
+ 基本設定
+----------------------------- */
+
 const DISTRICTS = 7
 
 const params = new URLSearchParams(location.search)
@@ -32,61 +40,89 @@ if(!roomId){
  location.search="?room="+roomId
 }
 
-let playerId = Math.floor(Math.random()*100000)
+let playerId = Math.random().toString(36).substring(2,10)
 let playerNumber = null
+
 let selectedCard = null
 let state = null
 
-const westBank=document.getElementById("eastBank")
-const eastBank=document.getElementById("westBank")
-const handDiv=document.getElementById("hand")
-const turnDisplay=document.getElementById("turnDisplay")
+let westBank
+let eastBank
+let handDiv
+let turnDisplay
 
 /* -----------------------------
-   プレイヤー入室
+ DOM準備
 ----------------------------- */
 
-onValue(ref(db,"rooms/"+roomId+"/players"), snap => {
+document.addEventListener("DOMContentLoaded",()=>{
 
- const players = snap.val() || {}
+ westBank=document.getElementById("westBank")
+ eastBank=document.getElementById("eastBank")
+ handDiv=document.getElementById("hand")
+ turnDisplay=document.getElementById("turnDisplay")
 
- if(!players.p1){
-  set(ref(db,"rooms/"+roomId+"/players/p1"),playerId)
-  playerNumber=1
- }
- else if(!players.p2 && players.p1!==playerId){
-  set(ref(db,"rooms/"+roomId+"/players/p2"),playerId)
-  playerNumber=2
- }
- else{
-  if(players.p1===playerId) playerNumber=1
-  if(players.p2===playerId) playerNumber=2
- }
-
- if(players.p1 && players.p2){
-  startGame()
- }
+ listenPlayers()
+ listenState()
 
 })
 
 /* -----------------------------
-   ゲーム初期化
+ プレイヤー入室
 ----------------------------- */
 
-function startGame(){
+function listenPlayers(){
+
+ onValue(ref(db,"rooms/"+roomId+"/players"), async snap => {
+
+  const players = snap.val() || {}
+
+  if(!players.p1){
+   await set(ref(db,"rooms/"+roomId+"/players/p1"),playerId)
+   playerNumber=1
+   return
+  }
+
+  if(!players.p2 && players.p1!==playerId){
+   await set(ref(db,"rooms/"+roomId+"/players/p2"),playerId)
+   playerNumber=2
+   return
+  }
+
+  if(players.p1===playerId) playerNumber=1
+  if(players.p2===playerId) playerNumber=2
+
+  if(players.p1 && players.p2){
+   tryStartGame()
+  }
+
+ })
+
+}
+
+/* -----------------------------
+ ゲーム開始
+----------------------------- */
+
+async function tryStartGame(){
+
+ const snap = await get(ref(db,"rooms/"+roomId+"/state"))
+
+ if(snap.exists()) return
 
  if(playerNumber!==1) return
 
- const deck = createDeck()
+ const deck=createDeck()
 
  const newState={
+
   started:true,
   districts:createDistricts(),
   hands:createHands(deck),
   floodDeck:deck,
   currentPlayer:1,
-  round:1,
-  lastLoser:null
+  round:1
+
  }
 
  set(ref(db,"rooms/"+roomId+"/state"),newState)
@@ -94,23 +130,28 @@ function startGame(){
 }
 
 /* -----------------------------
-   state受信
+ state同期
 ----------------------------- */
 
-onValue(ref(db,"rooms/"+roomId+"/state"),snap=>{
+function listenState(){
 
- const s=snap.val()
- if(!s) return
+ onValue(ref(db,"rooms/"+roomId+"/state"),snap=>{
 
- state=s
+  const s=snap.val()
 
- drawBoard()
- renderHand()
+  if(!s) return
 
-})
+  state=s
+
+  drawBoard()
+  renderHand()
+
+ })
+
+}
 
 /* -----------------------------
-   データ生成
+ データ生成
 ----------------------------- */
 
 function createDistricts(){
@@ -118,7 +159,7 @@ function createDistricts(){
  const arr=[]
 
  for(let i=0;i<DISTRICTS;i++){
-  arr.push({p1:[],p2:[],flooded:false,loser:null})
+  arr.push({p1:[],p2:[]})
  }
 
  return arr
@@ -170,13 +211,20 @@ function createHands(deck){
 }
 
 /* -----------------------------
-   描画
+ スコア
 ----------------------------- */
 
 function score(cards){
+
  if(!cards) return 0
+
  return cards.reduce((a,c)=>a+c.point,0)
+
 }
+
+/* -----------------------------
+ ボード描画
+----------------------------- */
 
 function drawBoard(){
 
@@ -211,25 +259,36 @@ function drawBoard(){
 
 }
 
+/* -----------------------------
+ 手札描画
+----------------------------- */
+
 function renderHand(){
 
  if(!state || !playerNumber) return
 
  handDiv.innerHTML=""
 
- state.hands[playerNumber-1].forEach((c,i)=>{
+ const hand=state.hands[playerNumber-1]
+
+ if(!hand) return
+
+ hand.forEach((c,i)=>{
 
   const d=document.createElement("div")
 
   d.className="handCard"
 
-  if(i===selectedCard) d.classList.add("selected")
+  if(i===selectedCard)
+   d.classList.add("selected")
 
   d.innerHTML=c.name+"<br>"+c.point
 
   d.onclick=()=>{
+
    selectedCard=i
    renderHand()
+
   }
 
   handDiv.appendChild(d)
@@ -237,6 +296,10 @@ function renderHand(){
  })
 
 }
+
+/* -----------------------------
+ ターン表示
+----------------------------- */
 
 function updateTurnDisplay(){
 
@@ -253,7 +316,7 @@ function updateTurnDisplay(){
 }
 
 /* -----------------------------
-   カード配置
+ カード配置
 ----------------------------- */
 
 function build(i){
