@@ -2,28 +2,47 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>OKAKOI ONLINE</title>
+<title>御囲堤ゲーム</title>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script type="module">
+//ルーム
+const params = new URLSearchParams(location.search)
+let roomId = params.get("room")
 
-<script>
-const firebaseConfig={
-apiKey:"AIzaSyC9tAyMDg-vWo2HacWRV3zODrfqIIoNHuw",
-authDomain:"okakoi.firebaseapp.com",
-databaseURL:"https://okakoi-default-rtdb.firebaseio.com",
-projectId:"okakoi",
-storageBucket:"okakoi.firebasestorage.app",
-messagingSenderId:"359327536081",
-appId:"1:359327536081:web:5e4c85e194f935a01bc6f0"
+if(!roomId){
+  roomId = Math.random().toString(36).substring(2,8)
+  location.search = "?room="+roomId
 }
 
-firebase.initializeApp(firebaseConfig)
-const db=firebase.database()
+//Firebase
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+ apiKey: "AIzaSyC9tAyMDg-vWo2HacWRV3zODrfqIIoNHuw",
+  authDomain: "okakoi.firebaseapp.com",
+  databaseURL: "https://okakoi-default-rtdb.firebaseio.com",
+  projectId: "okakoi",
+  storageBucket: "okakoi.firebasestorage.app",
+  messagingSenderId: "359327536081",
+  appId: "1:359327536081:web:5e4c85e194f935a01bc6f0",
+  measurementId: "G-LDYT929YM2"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 </script>
 
 <style>
+  .villageHighlight{
+outline:4px solid gold;
+background:#fff7cc;
+transform:scale(1.2);
+box-shadow:0 0 6px gold;
+}
+
 body{
+margin:0;
 font-family:sans-serif;
 background:#dff2ff;
 text-align:center;
@@ -36,12 +55,74 @@ gap:6px;
 padding:6px;
 }
 
+.bank{
+display:flex;
+flex-direction:column;
+gap:6px;
+}
+
 .district{
 background:#eaffea;
 border:3px solid #333;
 border-radius:12px;
 padding:4px;
 min-height:80px;
+}
+
+.flooded{
+background:#b9e3ff;
+}
+
+.title{
+font-weight:bold;
+font-size:12px;
+}
+
+.score{
+font-size:22px;
+font-weight:bold;
+color:#222;
+}
+
+.cardSmall{
+display:inline-block;
+width:40px;
+height:24px;
+border-radius:6px;
+margin:1px;
+font-size:12px;
+font-weight:bold;
+color:white;
+line-height:24px;
+}
+
+.east{background:#d33}
+.west{background:#2d6cdf}
+
+.cardHiddenEast{
+width:40px;
+height:12px;
+background:#ffb3b3;
+margin:1px;
+border-radius:3px;
+}
+
+.cardHiddenWest{
+width:40px;
+height:12px;
+background:#b7ccff;
+margin:1px;
+border-radius:3px;
+}
+
+.villageHighlight{
+outline:3px solid gold;
+transform:scale(1.15);
+}
+
+#river{
+background:linear-gradient(90deg,#4fb0ff,#1e78d7);
+border-radius:40px;
 }
 
 .handCard{
@@ -53,6 +134,8 @@ width:110px;
 height:140px;
 margin:6px;
 cursor:pointer;
+font-size:18px;
+font-weight:bold;
 }
 
 .selected{
@@ -62,126 +145,286 @@ outline:4px solid orange;
 #log{
 background:white;
 border:2px solid #333;
-height:300px;
+border-radius:10px;
+padding:4px;
+height:420px;
 overflow:auto;
+font-size:13px;
+text-align:left;
 }
+
+#aidPanel{
+margin-top:6px;
+}
+
+.aidButton{
+padding:8px 16px;
+margin:4px;
+font-size:16px;
+cursor:pointer;
+}
+
+.loserEast{
+border:4px solid red;
+box-shadow:0 0 10px red;
+}
+
+.loserWest{
+border:4px solid blue;
+box-shadow:0 0 10px blue;
+}
+#turnDisplay{
+position:absolute;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+font-size:40px;
+font-weight:bold;
+pointer-events:none;
+}
+
+.turnEast{
+color:#1e78d7;
+}
+
+.turnWest{
+color:#d33;
+}
+
+#river{
+position:relative;
+background:linear-gradient(90deg,#4fb0ff,#1e78d7);
+border-radius:40px;
+}
+#victoryScreen{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.8);
+display:none;
+align-items:center;
+justify-content:center;
+flex-direction:column;
+font-size:48px;
+color:white;
+z-index:1000;
+}
+
+#victoryText{
+margin-bottom:30px;
+}
+
+#victoryScreen button{
+font-size:24px;
+padding:12px 30px;
+cursor:pointer;
+}
+#scoreTable{
+background:white;
+border:2px solid #333;
+border-radius:10px;
+padding:8px;
+margin-top:6px;
+font-size:14px;
+text-align:left;
+}
+
+#scoreTable div{
+padding:2px 0;
+}
+
 </style>
 </head>
 
 <body>
 
-<h1>御囲堤ゲーム ONLINE</h1>
-
-<button onclick="copyURL()">招待URLコピー</button>
+<h1>治水ボードゲーム</h1>
 
 <div id="container">
-<div id="eastBank"></div>
-<div id="river"></div>
-<div id="westBank"></div>
+
+<div class="bank" id="eastBank"></div>
+
+<div id="river">
+  <div id="turnDisplay"></div>
+</div>
+
+<div class="bank" id="westBank"></div>
+
+<div>
+
+<h3>履歴</h3>
 <div id="log"></div>
+
+<div id="aidPanel"></div>
+
+<h3>建物の強さ</h3>
+<div id="scoreTable">
+
+<div>🗺 ハザードマップ　1点</div>
+<div>🚪 水門　　　　　2点</div>
+<div>🧱 堤防　　　　　3点</div>
+<div>🏞 ダム　　　　　4点</div>
+<div>🏠 集落　　　　　0点</div>
+
+</div>
+
+</div>
+
 </div>
 
 <h3>手札</h3>
 <div id="hand"></div>
 
-<script>
+<script type="module">
 
-/* ルーム */
 
-const params=new URLSearchParams(location.search)
-let room=params.get("room")
 
-if(!room){
-room=Math.random().toString(36).substring(2,7)
-location.search="?room="+room
-}
 
-const roomRef=db.ref("rooms/"+room)
 
-let myPlayer=null
-let gameStarted=false
 
-roomRef.child("players").transaction(players=>{
 
-if(!players) players={}
-
-if(!players.p1){
-players.p1=true
-myPlayer=1
-}
-else if(!players.p2){
-players.p2=true
-myPlayer=2
-}
-
-return players
-
-}).then(()=>{
-
-roomRef.child("players").on("value",snap=>{
-
-const players=snap.val()
-if(!players)return
-
-if(players.p1 && players.p2){
-
-roomRef.child("started").transaction(s=>{
-
-if(s) return
-
-log("ゲーム開始")
-
-createBoard()
-
-if(myPlayer==1){
-startGame()
-}
-
-return true
-
-})
-
-}else{
-
-createBoard()
-log("相手プレイヤーを待っています")
-
-}
-
-})
-
-})
-
-/* ゲーム */
 
 const DISTRICTS=7
+  //プレイヤー番号
+let playerId = Math.floor(Math.random()*100000)
+let playerNumber = null
+let selectedCard = null
+
+let actionLock = false //操作ロック
 
 let districts=[]
 let hands=[[],[]]
 let floodDeck=[]
-
 let currentPlayer=1
-let selectedCard=null
+let round=1
+let lastLoser=null
+
+onValue(ref(db,"rooms/"+roomId+"/players"), snap => {
+
+  let players = snap.val() || {}
+
+  if(!players.p1){
+     set(ref(db,"rooms/"+roomId+"/players/p1"), playerId)
+     playerNumber = 1
+  }
+  else if(!players.p2 && players.p1 !== playerId){
+     set(ref(db,"rooms/"+roomId+"/players/p2"), playerId)
+     playerNumber = 2
+  }
+  else{
+
+    if(players.p1 === playerId) playerNumber = 1
+    else if(players.p2 === playerId) playerNumber = 2
+    else{
+
+      alert("このルームは満員です")
+      document.body.innerHTML="<h1>満員です</h1>"
+      return
+
+    }
+
+  }
+
+})
+
+
+//gamestateにまとめる
+function getGameState(){
+  return {
+    districts,
+    hands,
+    floodDeck,
+    currentPlayer,
+    round,
+    lastLoser
+  }
+}
+
+function setGameState(s){
+
+  districts=s.districts
+  hands=s.hands
+  floodDeck=s.floodDeck
+  currentPlayer=s.currentPlayer
+  round=s.round
+  lastLoser=s.lastLoser
+
+}
+
+//サーバーに送信
+function syncGame(){
+
+  const state=getGameState()
+
+  set(ref(db,"rooms/"+roomId+"/state"),state)
+
+}
+
+//相手の操作を受信
+onValue(ref(db,"rooms/"+roomId+"/state"),snap=>{
+
+  const s=snap.val()
+
+  if(!s)return
+
+  setGameState(s)
+
+  drawBoard()
+  renderHand()
+
+   actionLock=false 
+
+})
 
 const eastBank=document.getElementById("eastBank")
 const westBank=document.getElementById("westBank")
 const handDiv=document.getElementById("hand")
 const logDiv=document.getElementById("log")
+const aidPanel=document.getElementById("aidPanel")
+const turnDisplay=document.getElementById("turnDisplay")
 
 function log(t){
+
 let d=document.createElement("div")
 d.innerText=t
 logDiv.prepend(d)
+
+}
+function updateTurnDisplay(){
+
+if(currentPlayer==1){
+
+turnDisplay.innerText="西"
+turnDisplay.className="turnWest"
+
+}else{
+
+turnDisplay.innerText="東"
+turnDisplay.className="turnEast"
+
 }
 
-/* デッキ */
+}
+
+function icon(n){
+
+if(n=="ハザードマップ")return"🗺"
+if(n=="水門")return"🚪"
+if(n=="堤防")return"🧱"
+if(n=="ダム")return"🏞"
+if(n=="集落")return"🏠"
+
+}
 
 function createDeck(){
 
 function add(n,p,c){
-for(let i=0;i<c;i++){
+
+for(let i=0;i<c;i++)
 floodDeck.push({name:n,point:p})
-}
+
 }
 
 add("ハザードマップ",1,24)
@@ -196,12 +439,7 @@ floodDeck.sort(()=>Math.random()-0.5)
 function drawFlood(){return floodDeck.pop()}
 function drawVillage(){return {name:"集落",point:0}}
 
-/* ボード */
-
 function createBoard(){
-
-eastBank.innerHTML=""
-westBank.innerHTML=""
 
 for(let i=0;i<DISTRICTS;i++){
 
@@ -211,113 +449,25 @@ let w=document.createElement("div")
 e.className="district"
 w.className="district"
 
-if(myPlayer==1){
 e.onclick=()=>build(i)
-}else{
 w.onclick=()=>build(i)
-}
 
 eastBank.appendChild(e)
 westBank.appendChild(w)
 
-}
+districts.push({p1:[],p2:[],flooded:false,loser:null})
 
 }
 
-/* 手札 */
-
-function renderHand(){
-
-if(!myPlayer)return
-if(!hands || !hands[myPlayer-1]) return
-
-handDiv.innerHTML=""
-
-hands[myPlayer-1].forEach((c,i)=>{
-
-let d=document.createElement("div")
-d.className="handCard"
-
-if(i==selectedCard){
-d.classList.add("selected")
 }
 
-d.innerHTML=c.name+"<br>"+c.point
+function score(cards){
 
-d.onclick=()=>{
-selectedCard=i
-renderHand()
-}
-
-handDiv.appendChild(d)
-
-})
+return cards.reduce((a,c)=>a+c.point,0)
 
 }
-
-/* 建設 */
-
-function build(i){
-
-if(selectedCard==null)return
-
-roomRef.child("state").transaction(state=>{
-
-if(!state)return state
-if(state.currentPlayer!==myPlayer)return
-
-let card=state.hands[myPlayer-1].splice(selectedCard,1)[0]
-
-state.districts[i]["p"+myPlayer].push(card)
-
-state.currentPlayer=myPlayer==1?2:1
-
-return state
-
-})
-
-selectedCard=null
-
-}
-
-/* 保存 */
-
-function saveGame(){
-
-roomRef.child("state").set({
-districts,
-hands,
-currentPlayer
-})
-
-}
-
-/* 同期 */
-
-roomRef.child("state").on("value",snap=>{
-
-const data=snap.val()
-if(!data || !data.districts)return
-
-
-if(eastBank.children.length===0){
-createBoard()
-}
-
-districts=data.districts
-hands=data.hands
-currentPlayer=data.currentPlayer
-
-drawBoard()
-renderHand()
-
-})
-
-/* 表示 */
 
 function drawBoard(){
-
-if(!districts) return
 
 let east=eastBank.children
 let west=westBank.children
@@ -327,55 +477,399 @@ for(let i=0;i<DISTRICTS;i++){
 let e=east[i]
 let w=west[i]
 
-let d=districts[i]
-if(!d) continue
+e.className="district"
+w.className="district"
+if(districts[i].loser==1){
+e.classList.add("loserEast")
+}
 
-e.innerHTML="西:"+d.p1.length
-w.innerHTML="東:"+d.p2.length
+if(districts[i].loser==2){
+w.classList.add("loserWest")
+}
+
+if(districts[i].flooded){
+
+e.classList.add("flooded")
+w.classList.add("flooded")
+
+}
+
+let p1score=score(districts[i].p1)
+let p2score=score(districts[i].p2)
+
+let p1show=districts[i].flooded||currentPlayer==1
+let p2show=districts[i].flooded||currentPlayer==2
+
+e.innerHTML=
+"<div class='title'>地区"+(i+1)+(districts[i].flooded?" 🌊":"")+"</div>"+
+"<div class='score'>西岸:"+ (p1show?p1score:"?") +"</div>"
+
+w.innerHTML=
+"<div class='title'>地区"+(i+1)+(districts[i].flooded?" 🌊":"")+"</div>"+
+"<div class='score'>東岸:"+ (p2show?p2score:"?") +"</div>"
+
+districts[i].p1.forEach(c=>{
+
+let d=document.createElement("div")
+
+if(p1show){
+
+d.className="cardSmall east"
+d.innerHTML=icon(c.name)+c.point
+
+if(c.name=="集落" && districts[i].flooded){
+d.classList.add("villageHighlight")
+}
+
+}else{
+
+d.className="cardHiddenEast"
+
+}
+
+e.appendChild(d)
+
+})
+
+districts[i].p2.forEach(c=>{
+
+let d=document.createElement("div")
+
+if(p2show){
+
+d.className="cardSmall west"
+d.innerHTML=icon(c.name)+c.point
+
+}else{
+
+d.className="cardHiddenWest"
+
+}
+
+w.appendChild(d)
+
+})
 
 }
 
 }
 
-/* URLコピー */
+function showAidChoice(player){
 
-function copyURL(){
-navigator.clipboard.writeText(location.href)
-alert("URLを友達に送ってください")
+aidPanel.innerHTML="義援金選択<br>"
+
+let b1=document.createElement("button")
+b1.className="aidButton"
+b1.innerText="治水カード"
+
+b1.onclick=()=>{
+
+hands[player-1].push(drawFlood())
+log("義援金:治水")
+aidPanel.innerHTML=""
+budgetDeal()
+
 }
 
-/* ゲーム開始 */
+let b2=document.createElement("button")
+b2.className="aidButton"
+b2.innerText="集落カード"
 
-function startGame(){
+b2.onclick=()=>{
 
-createBoard()
+hands[player-1].push(drawVillage())
+log("義援金:集落")
+aidPanel.innerHTML=""
+budgetDeal()
 
-createDeck()
-
-districts=[]
-for(let i=0;i<DISTRICTS;i++){
-districts.push({p1:[],p2:[],flooded:false})
 }
+
+aidPanel.appendChild(b1)
+aidPanel.appendChild(b2)
+
+}
+
+function budgetPhase(){
+
+ if(playerNumber!=1) return
+
+ log("ラウンド"+round+"開始")
+
+ if(lastLoser){
+   showAidChoice(lastLoser)
+ }else{
+   budgetDeal()
+ }
+
+}
+
+function budgetDeal(){
 
 hands=[[],[]]
 
 for(let p=0;p<2;p++){
 
-for(let i=0;i<4;i++){
+for(let i=0;i<4;i++)
 hands[p].push(drawFlood())
-}
 
-for(let i=0;i<3;i++){
+for(let i=0;i<3;i++)
 hands[p].push(drawVillage())
+
+}
+
+renderHand()
+
+}
+
+function renderHand(){
+
+handDiv.innerHTML=""
+
+hands[playerNumber-1].forEach((c,i)=>{
+
+let d=document.createElement("div")
+
+d.className="handCard"
+
+if(i==selectedCard)
+d.classList.add("selected")
+
+d.innerHTML=icon(c.name)+"<br>"+c.name+"<br>"+c.point
+
+d.onclick=()=>{
+
+selectedCard=i
+renderHand()
+
+}
+
+handDiv.appendChild(d)
+
+})
+updateTurnDisplay()
+
+}
+
+function build(i){
+  if(actionLock) return
+　actionLock = true
+
+  if(playerNumber !== currentPlayer) return
+
+  if(selectedCard==null)return
+  if(districts[i].flooded)return
+
+  let card=hands[playerNumber-1].splice(selectedCard,1)[0]
+
+  districts[i]["p"+currentPlayer].push(card)
+
+  selectedCard=null
+
+  drawBoard()
+  syncGame()
+
+  let other=currentPlayer==1?2:1
+
+  if(hands[other-1].length>0)
+  currentPlayer=other
+
+  renderHand()
+
+  if(hands[0].length==0 && hands[1].length==0){
+    if(playerNumber==1){
+      startFlood()
+    }
+  }
+}
+
+function startFlood(){
+
+ if(playerNumber !== 1) return  
+
+ let candidates=[]
+
+ districts.forEach((d,i)=>{
+
+   if(!d.flooded)
+   candidates.push(i)
+
+ })
+
+ let i=candidates[Math.floor(Math.random()*candidates.length)]
+
+ resolveFlood(i)
+
+}
+function resolveFlood(i){
+
+districts[i].flooded=true
+
+let p1=score(districts[i].p1)
+let p2=score(districts[i].p2)
+
+if(p1<p2){
+
+districts[i].p1=districts[i].p1.filter(c=>c.name!="集落")
+lastLoser=1
+districts[i].loser=1
+log("洪水:地区"+(i+1)+" 東岸勝利")
+
+}
+else if(p2<p1){
+
+districts[i].p2=districts[i].p2.filter(c=>c.name!="集落")
+lastLoser=2
+districts[i].loser=2
+log("洪水:地区"+(i+1)+" 西岸勝利")
+
+}
+else{
+
+lastLoser=null
+districts[i].loser=null
+log("洪水:地区"+(i+1)+" 引き分け")
+
+}
+
+drawBoard()
+
+if(checkMegaFlood()){
+return
+}
+
+round++
+
+if(round>7){
+
+endGame()
+
+}else{
+
+setTimeout(budgetPhase,1200)
+
+}
+
+syncGame()//resolveFlood() の最後に追加
+
+}
+
+function checkMegaFlood(){
+
+for(let player=1;player<=2;player++){
+
+let count=0
+
+for(let i=0;i<districts.length;i++){
+
+if(districts[i].loser==player){
+
+count++
+
+if(count>=3){
+
+megaFlood(player)
+return true
+
+}
+
+}else{
+
+count=0
+
+}
+
 }
 
 }
 
-saveGame()
+return false
 
 }
+
+function megaFlood(player){
+
+log("大洪水発生")
+
+if(player==1){
+
+log("東岸 敗北")
+log("西岸 勝利")
+
+}else{
+
+log("西岸 敗北")
+log("東岸 勝利")
+
+}
+
+log("ゲーム終了")
+
+handDiv.innerHTML=""
+aidPanel.innerHTML=""
+
+}
+
+
+function endGame(){
+
+let eastVillage=0
+let westVillage=0
+
+districts.forEach(d=>{
+
+eastVillage+=d.p1.filter(c=>c.name=="集落").length
+westVillage+=d.p2.filter(c=>c.name=="集落").length
+
+})
+
+log("ゲーム終了")
+log("東岸 集落:"+eastVillage)
+log("西岸 集落:"+westVillage)
+
+let text=""
+
+if(eastVillage>westVillage){
+
+log("東岸 勝利")
+text="東岸の勝利！"
+
+}else if(westVillage>eastVillage){
+
+log("西岸 勝利")
+text="西岸の勝利！"
+
+}else{
+
+log("引き分け")
+text="引き分け"
+
+}
+
+let screen=document.getElementById("victoryScreen")
+let vtext=document.getElementById("victoryText")
+
+vtext.innerText=text
+screen.style.display="flex"
+
+}
+
+createDeck()
+createBoard()
+
+if(playerNumber==1){
+ budgetPhase()
+ syncGame()
+}
+
+drawBoard()
+updateTurnDisplay()
 
 </script>
+
+<div id="victoryScreen">
+<div id="victoryText"></div>
+<button onclick="location.reload()">もう一度遊ぶ</button>
+</div>
 
 </body>
 </html>
