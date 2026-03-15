@@ -216,9 +216,9 @@ function createHands(deck){
 
 function score(cards){
 
- if(!cards) return 0
+ if(!Array.isArray(cards)) return 0
 
- return cards.reduce((a,c)=>a+c.point,0)
+ return cards.reduce((a,c)=>a+(c?.point||0),0)
 
 }
 
@@ -241,9 +241,13 @@ function drawBoard(){
   w.className="district"
   e.className="district"
 
-  w.onclick=()=>build(i)
-  e.onclick=()=>build(i)
+w.onclick=()=>{
+ if(playerNumber===1) build(i)
+}
 
+e.onclick=()=>{
+ if(playerNumber===2) build(i)
+}
   const p1score=score(d.p1)
   const p2score=score(d.p2)
 
@@ -327,7 +331,19 @@ function build(i){
 
  const newState=JSON.parse(JSON.stringify(state))
 
- const card=newState.hands[playerNumber-1].splice(selectedCard,1)[0]
+ const hand=newState.hands[playerNumber-1]
+
+ if(!hand) return
+ if(selectedCard>=hand.length) return
+
+ const card=hand.splice(selectedCard,1)[0]
+
+ if(!card) return
+
+ if(!newState.districts[i]) return
+
+ if(!newState.districts[i].p1) newState.districts[i].p1=[]
+ if(!newState.districts[i].p2) newState.districts[i].p2=[]
 
  newState.districts[i]["p"+playerNumber].push(card)
 
@@ -338,7 +354,6 @@ function build(i){
  set(ref(db,"rooms/"+roomId+"/state"),newState)
 
 }
-
 </script>
 
 
