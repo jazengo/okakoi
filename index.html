@@ -231,7 +231,6 @@ function drawBoard(){
  if(!state) return
 
  const districts = state.districts
-
  if(!Array.isArray(districts)) return
 
  westBank.innerHTML=""
@@ -259,8 +258,53 @@ function drawBoard(){
   const p1score=score(d.p1)
   const p2score=score(d.p2)
 
-  w.innerHTML="<div class='title'>地区"+(i+1)+"</div><div class='score'>西岸:"+p1score+"</div>"
-  e.innerHTML="<div class='title'>地区"+(i+1)+"</div><div class='score'>東岸:"+p2score+"</div>"
+  /* タイトル */
+  const titleW=document.createElement("div")
+  titleW.className="title"
+  titleW.innerText="地区"+(i+1)
+
+  const titleE=document.createElement("div")
+  titleE.className="title"
+  titleE.innerText="地区"+(i+1)
+
+  /* カード表示エリア */
+  const cardsW=document.createElement("div")
+  const cardsE=document.createElement("div")
+
+  if(Array.isArray(d.p1)){
+   d.p1.forEach(c=>{
+    const card=document.createElement("div")
+    card.className="cardSmall west"
+    card.innerText=c.point
+    cardsW.appendChild(card)
+   })
+  }
+
+  if(Array.isArray(d.p2)){
+   d.p2.forEach(c=>{
+    const card=document.createElement("div")
+    card.className="cardSmall east"
+    card.innerText=c.point
+    cardsE.appendChild(card)
+   })
+  }
+
+  /* スコア */
+  const scoreW=document.createElement("div")
+  scoreW.className="score"
+  scoreW.innerText="西岸:"+p1score
+
+  const scoreE=document.createElement("div")
+  scoreE.className="score"
+  scoreE.innerText="東岸:"+p2score
+
+  w.appendChild(titleW)
+  w.appendChild(cardsW)
+  w.appendChild(scoreW)
+
+  e.appendChild(titleE)
+  e.appendChild(cardsE)
+  e.appendChild(scoreE)
 
   westBank.appendChild(w)
   eastBank.appendChild(e)
