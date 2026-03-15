@@ -233,10 +233,11 @@ districts.push({p1:[],p2:[],flooded:false,loser:null})
 
 function score(cards){
 
-return cards.reduce((a,c)=>a+c.point,0)
+  if(!cards) return 0
+
+  return cards.reduce((a,c)=>a+c.point,0)
 
 }
-
 function drawBoard(){
 
 let east=eastBank.children
@@ -264,8 +265,8 @@ w.classList.add("flooded")
 
 }
 
-let p1score=score(districts[i].p1)
-let p2score=score(districts[i].p2)
+let p1score=score(districts[i].p1 || [])
+let p2score=score(districts[i].p2 || [])
 
 let p1show=districts[i].flooded||currentPlayer==1
 let p2show=districts[i].flooded||currentPlayer==2
@@ -424,9 +425,8 @@ updateTurnDisplay()
 function build(i){
   if(actionLock) return
   if(playerNumber !== currentPlayer) return
-actionLock = true
 
-  if(playerNumber !== currentPlayer) return
+  actionLock = true
 
   if(selectedCard==null)return
   if(districts[i].flooded)return
