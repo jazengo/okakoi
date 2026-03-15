@@ -82,10 +82,11 @@ onValue(ref(db,"rooms/"+roomId+"/players"), snap => {
 
   gameStarted = true
 
+  createBoard()
   if(playerNumber==1){
 
     createDeck()
-    createBoard()
+    
 
     // 手札配布
     budgetPhase()
@@ -239,6 +240,7 @@ function score(cards){
 
 }
 function drawBoard(){
+if(districts.length===0) return
 
 let east=eastBank.children
 let west=westBank.children
