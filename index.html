@@ -137,15 +137,19 @@ function syncGame(){
 onValue(ref(db,"rooms/"+roomId+"/state"),snap=>{
 
   const s=snap.val()
+  if(!s) return
 
-  if(!s)return
+  // 盤面がまだなら作る
+  if(districts.length === 0){
+      createBoard()
+  }
 
   setGameState(s)
 
   drawBoard()
   renderHand()
 
-actionLock=false 
+  actionLock=false 
 
 })
 
@@ -212,6 +216,11 @@ function drawVillage(){return {name:"集落",point:0}}
 
 function createBoard(){
 
+districts = []  // ←これ重要
+
+eastBank.innerHTML=""
+westBank.innerHTML=""
+
 for(let i=0;i<DISTRICTS;i++){
 
 let e=document.createElement("div")
@@ -240,6 +249,11 @@ function score(cards){
 
 }
 function drawBoard(){
+if(districts.length===0) return
+
+for(let i=0;i<DISTRICTS;i++){
+
+  if(!districts[i]) continue 
 if(districts.length===0) return
 
 let east=eastBank.children
@@ -281,7 +295,7 @@ w.innerHTML=
 "<div class='title'>地区"+(i+1)+(districts[i].flooded?" 🌊":"")+"</div>"+
 "<div class='score'>東岸:"+ (p2show?p2score:"?") +"</div>"
 
-districts[i].p1.forEach(c=>{
+(districts[i].p1 || []).forEach(c=>{
 
 let d=document.createElement("div")
 
@@ -304,7 +318,7 @@ e.appendChild(d)
 
 })
 
-districts[i].p2.forEach(c=>{
+(districts[i].p2 || []).forEach(c=>{
 
 let d=document.createElement("div")
 
