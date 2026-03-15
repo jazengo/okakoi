@@ -31,262 +31,8 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-</script>
 
-<style>
-  .villageHighlight{
-outline:4px solid gold;
-background:#fff7cc;
-transform:scale(1.2);
-box-shadow:0 0 6px gold;
-}
-
-body{
-margin:0;
-font-family:sans-serif;
-background:#dff2ff;
-text-align:center;
-}
-
-#container{
-display:grid;
-grid-template-columns:1fr 140px 1fr 260px;
-gap:6px;
-padding:6px;
-}
-
-.bank{
-display:flex;
-flex-direction:column;
-gap:6px;
-}
-
-.district{
-background:#eaffea;
-border:3px solid #333;
-border-radius:12px;
-padding:4px;
-min-height:80px;
-}
-
-.flooded{
-background:#b9e3ff;
-}
-
-.title{
-font-weight:bold;
-font-size:12px;
-}
-
-.score{
-font-size:22px;
-font-weight:bold;
-color:#222;
-}
-
-.cardSmall{
-display:inline-block;
-width:40px;
-height:24px;
-border-radius:6px;
-margin:1px;
-font-size:12px;
-font-weight:bold;
-color:white;
-line-height:24px;
-}
-
-.east{background:#d33}
-.west{background:#2d6cdf}
-
-.cardHiddenEast{
-width:40px;
-height:12px;
-background:#ffb3b3;
-margin:1px;
-border-radius:3px;
-}
-
-.cardHiddenWest{
-width:40px;
-height:12px;
-background:#b7ccff;
-margin:1px;
-border-radius:3px;
-}
-
-.villageHighlight{
-outline:3px solid gold;
-transform:scale(1.15);
-}
-
-#river{
-background:linear-gradient(90deg,#4fb0ff,#1e78d7);
-border-radius:40px;
-}
-
-.handCard{
-display:inline-block;
-background:white;
-border:3px solid #333;
-border-radius:12px;
-width:110px;
-height:140px;
-margin:6px;
-cursor:pointer;
-font-size:18px;
-font-weight:bold;
-}
-
-.selected{
-outline:4px solid orange;
-}
-
-#log{
-background:white;
-border:2px solid #333;
-border-radius:10px;
-padding:4px;
-height:420px;
-overflow:auto;
-font-size:13px;
-text-align:left;
-}
-
-#aidPanel{
-margin-top:6px;
-}
-
-.aidButton{
-padding:8px 16px;
-margin:4px;
-font-size:16px;
-cursor:pointer;
-}
-
-.loserEast{
-border:4px solid red;
-box-shadow:0 0 10px red;
-}
-
-.loserWest{
-border:4px solid blue;
-box-shadow:0 0 10px blue;
-}
-#turnDisplay{
-position:absolute;
-top:50%;
-left:50%;
-transform:translate(-50%,-50%);
-font-size:40px;
-font-weight:bold;
-pointer-events:none;
-}
-
-.turnEast{
-color:#1e78d7;
-}
-
-.turnWest{
-color:#d33;
-}
-
-#river{
-position:relative;
-background:linear-gradient(90deg,#4fb0ff,#1e78d7);
-border-radius:40px;
-}
-#victoryScreen{
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,0.8);
-display:none;
-align-items:center;
-justify-content:center;
-flex-direction:column;
-font-size:48px;
-color:white;
-z-index:1000;
-}
-
-#victoryText{
-margin-bottom:30px;
-}
-
-#victoryScreen button{
-font-size:24px;
-padding:12px 30px;
-cursor:pointer;
-}
-#scoreTable{
-background:white;
-border:2px solid #333;
-border-radius:10px;
-padding:8px;
-margin-top:6px;
-font-size:14px;
-text-align:left;
-}
-
-#scoreTable div{
-padding:2px 0;
-}
-
-</style>
-</head>
-
-<body>
-
-<h1>治水ボードゲーム</h1>
-
-<div id="container">
-
-<div class="bank" id="eastBank"></div>
-
-<div id="river">
-  <div id="turnDisplay"></div>
-</div>
-
-<div class="bank" id="westBank"></div>
-
-<div>
-
-<h3>履歴</h3>
-<div id="log"></div>
-
-<div id="aidPanel"></div>
-
-<h3>建物の強さ</h3>
-<div id="scoreTable">
-
-<div>🗺 ハザードマップ　1点</div>
-<div>🚪 水門　　　　　2点</div>
-<div>🧱 堤防　　　　　3点</div>
-<div>🏞 ダム　　　　　4点</div>
-<div>🏠 集落　　　　　0点</div>
-
-</div>
-
-</div>
-
-</div>
-
-<h3>手札</h3>
-<div id="hand"></div>
-
-<script type="module">
-
- import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-
-
-
-
-
+////////ここからゲームコード//////////
 
 
 const DISTRICTS=7
@@ -397,7 +143,7 @@ onValue(ref(db,"rooms/"+roomId+"/state"),snap=>{
   drawBoard()
   renderHand()
 
-   actionLock=false 
+actionLock=false 
 
 })
 
@@ -676,7 +422,7 @@ updateTurnDisplay()
 
 function build(i){
   if(actionLock) return
-　actionLock = true
+actionLock = true
 
   if(playerNumber !== currentPlayer) return
 
@@ -880,6 +626,254 @@ screen.style.display="flex"
 
 
 </script>
+
+
+
+<style>
+  .villageHighlight{
+outline:4px solid gold;
+background:#fff7cc;
+transform:scale(1.2);
+box-shadow:0 0 6px gold;
+}
+
+body{
+margin:0;
+font-family:sans-serif;
+background:#dff2ff;
+text-align:center;
+}
+
+#container{
+display:grid;
+grid-template-columns:1fr 140px 1fr 260px;
+gap:6px;
+padding:6px;
+}
+
+.bank{
+display:flex;
+flex-direction:column;
+gap:6px;
+}
+
+.district{
+background:#eaffea;
+border:3px solid #333;
+border-radius:12px;
+padding:4px;
+min-height:80px;
+}
+
+.flooded{
+background:#b9e3ff;
+}
+
+.title{
+font-weight:bold;
+font-size:12px;
+}
+
+.score{
+font-size:22px;
+font-weight:bold;
+color:#222;
+}
+
+.cardSmall{
+display:inline-block;
+width:40px;
+height:24px;
+border-radius:6px;
+margin:1px;
+font-size:12px;
+font-weight:bold;
+color:white;
+line-height:24px;
+}
+
+.east{background:#d33}
+.west{background:#2d6cdf}
+
+.cardHiddenEast{
+width:40px;
+height:12px;
+background:#ffb3b3;
+margin:1px;
+border-radius:3px;
+}
+
+.cardHiddenWest{
+width:40px;
+height:12px;
+background:#b7ccff;
+margin:1px;
+border-radius:3px;
+}
+
+.villageHighlight{
+outline:3px solid gold;
+transform:scale(1.15);
+}
+
+#river{
+background:linear-gradient(90deg,#4fb0ff,#1e78d7);
+border-radius:40px;
+}
+
+.handCard{
+display:inline-block;
+background:white;
+border:3px solid #333;
+border-radius:12px;
+width:110px;
+height:140px;
+margin:6px;
+cursor:pointer;
+font-size:18px;
+font-weight:bold;
+}
+
+.selected{
+outline:4px solid orange;
+}
+
+#log{
+background:white;
+border:2px solid #333;
+border-radius:10px;
+padding:4px;
+height:420px;
+overflow:auto;
+font-size:13px;
+text-align:left;
+}
+
+#aidPanel{
+margin-top:6px;
+}
+
+.aidButton{
+padding:8px 16px;
+margin:4px;
+font-size:16px;
+cursor:pointer;
+}
+
+.loserEast{
+border:4px solid red;
+box-shadow:0 0 10px red;
+}
+
+.loserWest{
+border:4px solid blue;
+box-shadow:0 0 10px blue;
+}
+#turnDisplay{
+position:absolute;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+font-size:40px;
+font-weight:bold;
+pointer-events:none;
+}
+
+.turnEast{
+color:#1e78d7;
+}
+
+.turnWest{
+color:#d33;
+}
+
+#river{
+position:relative;
+background:linear-gradient(90deg,#4fb0ff,#1e78d7);
+border-radius:40px;
+}
+#victoryScreen{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.8);
+display:none;
+align-items:center;
+justify-content:center;
+flex-direction:column;
+font-size:48px;
+color:white;
+z-index:1000;
+}
+
+#victoryText{
+margin-bottom:30px;
+}
+
+#victoryScreen button{
+font-size:24px;
+padding:12px 30px;
+cursor:pointer;
+}
+#scoreTable{
+background:white;
+border:2px solid #333;
+border-radius:10px;
+padding:8px;
+margin-top:6px;
+font-size:14px;
+text-align:left;
+}
+
+#scoreTable div{
+padding:2px 0;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>治水ボードゲーム</h1>
+
+<div id="container">
+
+<div class="bank" id="eastBank"></div>
+
+<div id="river">
+  <div id="turnDisplay"></div>
+</div>
+
+<div class="bank" id="westBank"></div>
+
+<div>
+
+<h3>履歴</h3>
+<div id="log"></div>
+
+<div id="aidPanel"></div>
+
+<h3>建物の強さ</h3>
+<div id="scoreTable">
+
+<div>🗺 ハザードマップ　1点</div>
+<div>🚪 水門　　　　　2点</div>
+<div>🧱 堤防　　　　　3点</div>
+<div>🏞 ダム　　　　　4点</div>
+<div>🏠 集落　　　　　0点</div>
+
+</div>
+
+</div>
+
+</div>
+
+<h3>手札</h3>
+<div id="hand"></div>
+
+
 
 <div id="victoryScreen">
 <div id="victoryText"></div>
