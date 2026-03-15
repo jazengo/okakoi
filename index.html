@@ -33,6 +33,7 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 ////////ここからゲームコード//////////
+window.onload = () => {
 
 
 const DISTRICTS=7
@@ -422,6 +423,7 @@ updateTurnDisplay()
 
 function build(i){
   if(actionLock) return
+  if(playerNumber !== currentPlayer) return
 actionLock = true
 
   if(playerNumber !== currentPlayer) return
@@ -623,7 +625,7 @@ screen.style.display="flex"
 
 }
 
-
+}
 
 </script>
 
