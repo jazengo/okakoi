@@ -504,6 +504,8 @@ function updateTurnDisplay(){
 
 function build(i){
 
+ console.log("build clicked",i,playerNumber,state.currentPlayer,selectedCard)
+
  if(!state) return
  if(playerNumber!==state.currentPlayer) return
  if(state.phase!=="build") return
