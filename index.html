@@ -466,7 +466,7 @@ const i = floodCard.district
 
  const d = newState.districts[i]
 
-state.districts[index].revealed = true
+newState.districts[i].revealed = true
 
 
  /* --------------------
@@ -1017,8 +1017,7 @@ function build(i){
  console.log("カード配置",card)
 
   /* 配置したカードの強調 */
-state.lastBuild = district
-
+newState.lastBuild = i
  /* 手札チェック */
 let handsCheck = newState.hands
 
