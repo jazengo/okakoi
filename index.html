@@ -204,7 +204,7 @@ function listenState(){
 
     console.log("state snapshot =", s)
 
-    if(!s) return
+    if(!s) return;
 
     /* フェーズ変化検出 */
     if(lastPhase !== s.phase){
@@ -227,15 +227,15 @@ function listenState(){
     console.log("state received")
 
     /* カード選択リセット */
-    selectedCard = null
+    selectedCard = null;
 
-    drawBoard()
-    renderHand()
-    updateTurnDisplay()
-    updatePlayerSide()
-    renderLogs()
+    drawBoard();
+    renderHand();
+    updateTurnDisplay();
+    updatePlayerSide();
+    renderLogs();
 
-  })
+  });
 
 }
 /* -----------------------------
