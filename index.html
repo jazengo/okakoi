@@ -137,6 +137,9 @@ async function tryStartGame(){
  }
 
  console.log("ゲーム開始", newState)
+ set(ref(db,"rooms/"+roomId+"/state"),newState).then(()=>{
+ console.log("state saved")
+})
 
  set(ref(db,"rooms/"+roomId+"/state"),newState)
 
