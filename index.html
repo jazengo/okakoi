@@ -333,17 +333,18 @@ function score(cards){
 
 function drawBoard(){
 
-while(districts.length < DISTRICTS){
- districts.push({p1:[],p2:[]})
-}
+
 
  if(!state) return
 
  /* -------------------------
     districts取得
  ------------------------- */
+let districts = state.districts || []
 
- let districts = state.districts
+while(districts.length < DISTRICTS){
+ districts.push({p1:[],p2:[]})
+}
 
  if(!districts){
   console.log("districts missing → 再生成")
@@ -570,26 +571,16 @@ function updatePlayerSide(){
  カード配置
 ----------------------------- */
 function build(i){
-   if(state.phase !== "build"){
- console.log("建設フェーズではない")
- return
-}
-   console.log("state=",state)
 
-
- console.log(
-  "build clicked",
-  "player:", playerNumber,
-  "turn:", state?.currentPlayer,
-  "selected:", selectedCard
- )
-
- /* -------------------------
-    基本チェック
- ------------------------- */
+ console.log("build start")
 
  if(!state){
   console.log("stateなし")
+  return
+ }
+
+ if(state.phase !== "build"){
+  console.log("建設フェーズではない")
   return
  }
 
@@ -603,48 +594,35 @@ function build(i){
   return
  }
 
- /* -------------------------
-    stateコピー
- ------------------------- */
+ /* stateコピー */
+ const newState = JSON.parse(JSON.stringify(state))
 
-const newState = JSON.parse(JSON.stringify(state))
+ /* districts安全化 */
+ let districts = newState.districts || []
 
- /* -------------------------
-    districts安全化
- ------------------------- */
+ if(!Array.isArray(districts)){
+  districts = Object.values(districts)
+ }
 
-let districts = newState.districts
+ while(districts.length < DISTRICTS){
+  districts.push({p1:[],p2:[]})
+ }
 
-if(!districts){
- districts=createDistricts()
-}
+ newState.districts = districts
 
-if(!Array.isArray(districts)){
- districts = Object.values(districts)
-}
+ /* hands安全化 */
+ let hands = newState.hands
 
-newState.districts = districts
- /* -------------------------
-    hands安全化
- ------------------------- */
+ if(!Array.isArray(hands)){
+  hands = Object.values(hands)
+ }
 
-let hands = newState.hands
-
-if(!hands){
- console.log("hands missing")
- return
-}
-
-if(!Array.isArray(hands)){
- hands = Object.values(hands)
-}
-
-newState.hands = hands
+ newState.hands = hands
 
  const hand = newState.hands[playerNumber-1]
 
  if(!hand){
-  console.log("handなし")
+  console.log("手札なし")
   return
  }
 
@@ -653,69 +631,51 @@ newState.hands = hands
   return
  }
 
- /* -------------------------
-    district安全化
- ------------------------- */
-
-if(!newState.districts[i]){
- console.log("district missing → 再生成",i)
- newState.districts[i]={p1:[],p2:[]}
-}
-
- if(!newState.districts[i].p1){
-  newState.districts[i].p1=[]
- }
-
- if(!newState.districts[i].p2){
-  newState.districts[i].p2=[]
- }
-
- /* -------------------------
-    カード取り出し
- ------------------------- */
-
+ /* カード取得 */
  const card = hand.splice(selectedCard,1)[0]
 
  if(!card){
-  console.log("card missing")
+  console.log("カード取得失敗")
   return
  }
 
- /* -------------------------
-    配置
- ------------------------- */
+ /* 手札を戻す（重要） */
+ newState.hands[playerNumber-1] = hand
 
- const side = playerNumber === 1 ? "p1" : "p2"
+ /* district準備 */
+ if(!newState.districts[i]){
+  newState.districts[i] = {p1:[],p2:[]}
+ }
+
+ if(!newState.districts[i].p1) newState.districts[i].p1=[]
+ if(!newState.districts[i].p2) newState.districts[i].p2=[]
+
+ /* 配置 */
+ const side = playerNumber===1 ? "p1" : "p2"
 
  newState.districts[i][side].push(card)
 
  console.log("カード配置",card)
 
- /* -------------------------
-    ターン交代
- ------------------------- */
+ /* 手札チェック */
+ const hand1 = Array.isArray(newState.hands[0]) ? newState.hands[0] : []
+ const hand2 = Array.isArray(newState.hands[1]) ? newState.hands[1] : []
 
- newState.currentPlayer = playerNumber === 1 ? 2 : 1
+ console.log("hand1",hand1.length)
+ console.log("hand2",hand2.length)
+
+ if(hand1.length===0 && hand2.length===0){
+  console.log("洪水フェーズ開始")
+  newState.phase="flood"
+ }
+
+ /* ターン交代 */
+ newState.currentPlayer = playerNumber===1 ? 2 : 1
 
  selectedCard = null
 
-/* -------------------------
-   手札がなくなったら洪水フェーズ
-------------------------- */
-
-const hand1 = Array.isArray(newState.hands[0]) ? newState.hands[0] : []
-const hand2 = Array.isArray(newState.hands[1]) ? newState.hands[1] : []
-
-if(hand1.length === 0 && hand2.length === 0){
- console.log("洪水フェーズ開始")
- newState.phase = "flood"
-}
-
- /* -------------------------
-    Firebase保存
- ------------------------- */
-
- set(ref(db,"rooms/"+roomId+"/state"), newState)
+ /* Firebase保存 */
+ set(ref(db,"rooms/"+roomId+"/state"),newState)
 
 }
 </script>
