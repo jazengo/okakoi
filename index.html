@@ -6,8 +6,13 @@
 
 <script type="module">
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
-import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-database.js";
+import { 
+ initializeApp 
+} from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
+
+import { 
+ getDatabase, ref, set, onValue, get, remove, onDisconnect 
+} from "https://www.gstatic.com/firebasejs/10.11.1/firebase-database.js";
 
 /* -----------------------------
  Firebase
@@ -64,6 +69,9 @@ document.addEventListener("DOMContentLoaded",()=>{
  turnDisplay=document.getElementById("turnDisplay")
 playerSideDisplay=document.getElementById("playerSide")
  drawEmptyBoard()
+
+  //set(ref(db,"rooms/"+roomId+"/state"),null)  // ←ページを開いたときにstateをリセット
+
 listenPlayers()
 listenState()
 })
@@ -78,39 +86,77 @@ function listenPlayers(){
 
   const players = snap.val() || {}
 
+  /* -----------------------------
+     プレイヤー0人 → ルーム削除
+  ----------------------------- */
+
+  if(!players.p1 && !players.p2){
+   console.log("プレイヤー0人 → ルーム削除")
+   remove(ref(db,"rooms/"+roomId))
+   return
+  }
+
+  /* -----------------------------
+     p1 入室
+  ----------------------------- */
+
   if(!players.p1){
+
    await set(ref(db,"rooms/"+roomId+"/players/p1"),playerId)
+
+   onDisconnect(ref(db,"rooms/"+roomId+"/players/p1")).remove()
+
    playerNumber=1
    return
   }
 
+  /* -----------------------------
+     p2 入室
+  ----------------------------- */
+
   if(!players.p2 && players.p1!==playerId){
+
    await set(ref(db,"rooms/"+roomId+"/players/p2"),playerId)
+
+   onDisconnect(ref(db,"rooms/"+roomId+"/players/p2")).remove()
+
    playerNumber=2
    return
   }
 
+  /* -----------------------------
+     既存プレイヤー判定
+  ----------------------------- */
+
   if(players.p1===playerId) playerNumber=1
   if(players.p2===playerId) playerNumber=2
 
-if(playerNumber){
- renderHand()
- updatePlayerSide()
-}
+  /* -----------------------------
+     UI更新
+  ----------------------------- */
 
-if(players.p1 && players.p2 && playerNumber===1){
+  if(playerNumber){
+   renderHand()
+   updatePlayerSide()
+  }
 
-  get(ref(db,"rooms/"+roomId+"/state")).then(snap=>{
+  /* -----------------------------
+     ゲーム開始
+  ----------------------------- */
+
+  if(players.p1 && players.p2 && playerNumber===1){
+
+   get(ref(db,"rooms/"+roomId+"/state")).then(snap=>{
     if(!snap.exists()){
-      tryStartGame()
+     tryStartGame()
     }
-  })
+   })
 
-}
+  }
+
  })
 
 }
-
 /* -----------------------------
  ゲーム開始
 ----------------------------- */
