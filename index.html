@@ -286,6 +286,13 @@ function drawBoard(){
 
  let districts = state.districts
 
+if(!districts){
+ drawEmptyBoard()
+ return
+}
+
+districts = Object.values(districts)
+
  // まだdistrictsが無い場合
  if(!districts){
   drawEmptyBoard()
