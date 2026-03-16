@@ -1,4 +1,9 @@
-<!DOCTYPE html>
+for(let player=0; player<2; player++){
+
+ if(!newState.hands[player])
+  newState.hands[player] = []
+
+ /* 建設カード2枚 */<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -574,14 +579,22 @@ if(newState.floodedDistricts.length >= 7){
 
 for(let player=0; player<2; player++){
 
- if(newState.buildDeck && newState.buildDeck.length > 0){
+ if(!newState.hands[player])
+  newState.hands[player] = []
 
-  if(!newState.hands[player])
-   newState.hands[player] = []
+ /* 建設カード2枚 */
 
-  newState.hands[player].push(drawBuild(newState.buildDeck))
+ for(let i=0;i<2;i++){
+
+  if(newState.buildDeck && newState.buildDeck.length > 0){
+   newState.hands[player].push(drawBuild(newState.buildDeck))
+  }
 
  }
+
+ /* 集落カード1枚 */
+
+ newState.hands[player].push(drawVillage())
 
 }
  /* --------------------
@@ -1289,3 +1302,17 @@ cursor:pointer;
 
 </body>
 </html>
+
+ for(let i=0;i<2;i++){
+
+  if(newState.buildDeck && newState.buildDeck.length > 0){
+   newState.hands[player].push(drawBuild(newState.buildDeck))
+  }
+
+ }
+
+ /* 集落カード1枚 */
+
+ newState.hands[player].push(drawVillage())
+
+}
