@@ -364,6 +364,17 @@ function runFloodPhase(){
  /* stateコピー */
  const newState = JSON.parse(JSON.stringify(state))
 
+  // ★これを追加
+ if(!newState.floodLog){
+   newState.floodLog = []
+ }
+
+ console.log("洪水フェーズ処理開始")
+
+ if(!newState.floodLog){
+  newState.floodLog = []
+}
+
  /* --- 安全初期化 --- */
 
  if(!newState.floodedDistricts){
