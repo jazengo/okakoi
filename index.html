@@ -560,7 +560,12 @@ function updatePlayerSide(){
  カード配置
 ----------------------------- */
 function build(i){
+   if(state.phase !== "build"){
+ console.log("建設フェーズではない")
+ return
+}
    console.log("state=",state)
+
 
  console.log(
   "build clicked",
@@ -683,6 +688,18 @@ if(!newState.districts[i]){
  newState.currentPlayer = playerNumber === 1 ? 2 : 1
 
  selectedCard = null
+
+/* -------------------------
+   手札がなくなったら洪水フェーズ
+------------------------- */
+
+const hand1 = newState.hands[0] || []
+const hand2 = newState.hands[1] || []
+
+if(hand1.length === 0 && hand2.length === 0){
+ console.log("洪水フェーズ開始")
+ newState.phase = "flood"
+}
 
  /* -------------------------
     Firebase保存
