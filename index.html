@@ -658,8 +658,14 @@ function build(i){
  console.log("カード配置",card)
 
  /* 手札チェック */
- const hand1 = Array.isArray(newState.hands[0]) ? newState.hands[0] : []
- const hand2 = Array.isArray(newState.hands[1]) ? newState.hands[1] : []
+let handsCheck = newState.hands
+
+if(!Array.isArray(handsCheck)){
+ handsCheck = Object.values(handsCheck)
+}
+
+const hand1 = handsCheck[0] || []
+const hand2 = handsCheck[1] || []
 
  console.log("hand1",hand1.length)
  console.log("hand2",hand2.length)
