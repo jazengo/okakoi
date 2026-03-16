@@ -230,8 +230,12 @@ function drawBoard(){
 
  if(!state) return
 
- const districts = state.districts
- if(!Array.isArray(districts)) return
+let districts = state.districts
+
+// Firebase対策（配列→オブジェクトになる）
+if(!Array.isArray(districts)){
+  districts = Object.values(districts || {})
+}
 
  westBank.innerHTML=""
  eastBank.innerHTML=""
