@@ -529,33 +529,52 @@ console.log(
 "selected:", selectedCard
 )
 
-if(!state) return
-if(playerNumber !== state.currentPlayer) return
-if(state.phase !== "build") return
-if(selectedCard === null) return
+if(!state){
+ console.log("stateなし")
+ return
+}
+
+if(playerNumber !== state.currentPlayer){
+ console.log("自分のターンではない")
+ return
+}
+
+if(selectedCard === null){
+ console.log("カード未選択")
+ return
+}
 
 const side = playerNumber === 1 ? "p1" : "p2"
 
 const newState = JSON.parse(JSON.stringify(state))
 
 const hand = newState.hands[playerNumber-1]
-if(!hand) return
-if(selectedCard >= hand.length) return
+
+if(!hand){
+ console.log("handなし")
+ return
+}
+
+if(selectedCard >= hand.length){
+ console.log("手札indexエラー")
+ return
+}
 
 const card = hand.splice(selectedCard,1)[0]
 
-if(!newState.districts[i]) return
+if(!newState.districts[i]){
+ console.log("districtなし")
+ return
+}
 
 if(!newState.districts[i].p1) newState.districts[i].p1=[]
 if(!newState.districts[i].p2) newState.districts[i].p2=[]
 
 newState.districts[i][side].push(card)
 
-newState.currentPlayer = playerNumber === 1 ? 2 : 1
+console.log("カード配置",card)
 
-if(newState.hands[0].length === 0 && newState.hands[1].length === 0){
-newState.phase = "battle"
-}
+newState.currentPlayer = playerNumber === 1 ? 2 : 1
 
 selectedCard = null
 
