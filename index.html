@@ -207,22 +207,21 @@ function listenState(){
     if(!s) return;
 
     /* フェーズ変化検出 */
-    if(lastPhase !== s.phase){
+  state = s   // ← 先にstateを更新
 
-      if(s.phase === "build"){
-        console.log("建設フェーズ開始")
-      }
+if(lastPhase !== s.phase){
 
-      if(s.phase === "flood"){
-        console.log("洪水フェーズ開始")
-        runFloodPhase()
-      }
+  if(s.phase === "build"){
+    console.log("建設フェーズ開始")
+  }
 
-      /* ← これが抜けていた */
-      lastPhase = s.phase
-    }
+  if(s.phase === "flood"){
+    console.log("洪水フェーズ開始")
+    runFloodPhase()
+  }
 
-    state = s
+  lastPhase = s.phase
+}
 
     console.log("state received")
 
@@ -359,6 +358,7 @@ function score(cards){
 
 function runFloodPhase(){
 
+ if(playerNumber !== 1) return 
  if(!state) return
 
  /* stateコピー */
