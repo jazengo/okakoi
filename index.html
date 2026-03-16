@@ -367,13 +367,15 @@ if(!Array.isArray(districts)){
 
   /* カード配置クリック */
 
- cardsW.onclick=()=>{
+cardsW.addEventListener("click",()=>{
+ console.log("district west clicked",i)
  build(i)
-}
+})
 
-cardsE.onclick=()=>{
+cardsE.addEventListener("click",()=>{
+ console.log("district east clicked",i)
  build(i)
-}
+})
 
   /* -------------------------
      カード表示
