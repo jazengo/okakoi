@@ -50,6 +50,7 @@ let westBank
 let eastBank
 let handDiv
 let turnDisplay
+let playerSideDisplay
 
 /* -----------------------------
  DOM準備
@@ -61,7 +62,7 @@ document.addEventListener("DOMContentLoaded",()=>{
  eastBank=document.getElementById("eastBank")
  handDiv=document.getElementById("hand")
  turnDisplay=document.getElementById("turnDisplay")
-
+playerSideDisplay=document.getElementById("playerSide")
  drawEmptyBoard()
 listenPlayers()
 listenState()
@@ -92,8 +93,9 @@ function listenPlayers(){
   if(players.p1===playerId) playerNumber=1
   if(players.p2===playerId) playerNumber=2
 
-  if(playerNumber){
+if(playerNumber){
  renderHand()
+ updatePlayerSide()
 }
 
 if(players.p1 && players.p2 && playerNumber===1){
@@ -508,6 +510,17 @@ function updateTurnDisplay(){
  }
 
 }
+function updatePlayerSide(){
+
+ if(!playerNumber) return
+
+ if(playerNumber===1){
+  playerSideDisplay.innerText="あなたは西岸プレイヤー"
+ }else{
+  playerSideDisplay.innerText="あなたは東岸プレイヤー"
+ }
+
+}
 
 /* -----------------------------
  カード配置
@@ -780,7 +793,8 @@ cursor:pointer;
 
 <body>
 
-<h1>治水ボードゲーム</h1>
+<h1>御囲堤ゲーム</h1>
+<h2 id="playerSide"></h2>
 
 <div id="container">
 
