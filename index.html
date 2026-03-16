@@ -147,25 +147,42 @@ async function tryStartGame(){
 ----------------------------- */
 
 function listenState(){
-    console.log("listenState start")
 
- onValue(ref(db,"rooms/"+roomId+"/state"),snap=>{
+ console.log("listenState start")
 
-  const s=snap.val()
+ const stateRef = ref(db,"rooms/"+roomId+"/state")
 
+ // ① 最初に現在stateを取得
+ get(stateRef).then(snap=>{
+  const s = snap.val()
   if(!s) return
+
+  console.log("initial state received")
+
+  state = s
+  drawBoard()
+  renderHand()
+  updateTurnDisplay()
+  updatePlayerSide()
+ })
+
+ // ② その後リアルタイム監視
+ onValue(stateRef,snap=>{
+
+  const s = snap.val()
+  if(!s) return
+
+  console.log("state update received")
 
   state=s
 
-
-drawBoard()
-
-  // 手札は必ず描画
+  drawBoard()
   renderHand()
-
   updateTurnDisplay()
-  updatePlayerSide() 
+  updatePlayerSide()
+
  })
+
 }
 
 /* -----------------------------
