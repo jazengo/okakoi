@@ -425,6 +425,10 @@ function updateTurnDisplay(){
 function build(i){
 
  if(!state) return
+ if(!Array.isArray(state.districts)){
+   state.districts = Object.values(state.districts || {})
+ }
+
  if(playerNumber!==state.currentPlayer) return
  if(selectedCard===null) return
 
