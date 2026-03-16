@@ -575,38 +575,40 @@ function build(i){
     stateコピー
  ------------------------- */
 
- const newState = JSON.parse(JSON.stringify(state))
+const newState = {...state}
 
  /* -------------------------
     districts安全化
  ------------------------- */
 
- if(!newState.districts){
-  console.log("districts missing")
-  return
- }
+let districts = newState.districts
 
- if(!Array.isArray(newState.districts)){
-  newState.districts = Object.values(newState.districts)
- }
+if(!districts){
+ console.log("districts missing")
+ return
+}
 
+if(!Array.isArray(districts)){
+ districts = Object.values(districts)
+}
+
+newState.districts = districts
  /* -------------------------
     hands安全化
  ------------------------- */
 
- if(!newState.hands){
-  console.log("hands missing")
-  return
- }
+let hands = newState.hands
 
-if(!newState.hands){
+if(!hands){
  console.log("hands missing")
  return
 }
 
-if(!Array.isArray(newState.hands)){
- newState.hands = Object.values(newState.hands)
+if(!Array.isArray(hands)){
+ hands = Object.values(hands)
 }
+
+newState.hands = hands
 
  const hand = newState.hands[playerNumber-1]
 
