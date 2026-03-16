@@ -97,9 +97,14 @@ function listenPlayers(){
 }
 
 if(players.p1 && players.p2 && playerNumber===1){
-  tryStartGame()
-}
 
+  get(ref(db,"rooms/"+roomId+"/state")).then(snap=>{
+    if(!snap.exists()){
+      tryStartGame()
+    }
+  })
+
+}
  })
 
 }
@@ -385,7 +390,10 @@ card.innerText=c && c.point ? c.point : ""
 
   }else{
 
-   cardsW.innerText="ここにカードを置く"
+  const labelW = document.createElement("div")
+labelW.innerText="ここにカードを置く"
+labelW.style.pointerEvents="none"
+cardsW.appendChild(labelW)
 
   }
 
@@ -399,8 +407,10 @@ card.innerText=c && c.point ? c.point : ""
    })
 
   }else{
-
-   cardsE.innerText="ここにカードを置く"
+const labelE = document.createElement("div")
+labelE.innerText="ここにカードを置く"
+labelE.style.pointerEvents="none"
+cardsE.appendChild(labelE)
 
   }
 
