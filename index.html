@@ -616,7 +616,7 @@ function drawBoard(){
 
 
  if(!state) return
-
+ const playerIndex = playerNumber - 1
  /* -------------------------
     districts取得
  ------------------------- */
@@ -727,16 +727,16 @@ while(districts.length < DISTRICTS){
  const div=document.createElement("div")
 
  if(playerIndex===0){
-   div.textContent=c
- }
- else if(d.revealed){
-   div.textContent=c
+   div.textContent=c.name
+  }
+  else if(d.revealed){
+   div.textContent=c.name
  }
  else{
    div.textContent="？"
  }
 
- w.appendChild(div)
+cardsW.appendChild(div)
 
 })
 
