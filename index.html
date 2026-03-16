@@ -295,21 +295,15 @@ function drawBoard(){
 
  if(!state) return
 
+ /* -------------------------
+    districts取得
+ ------------------------- */
+
  let districts = state.districts
 
-if(!districts){
- console.log("districts missing in drawBoard")
- return
-}
-
-if(!Array.isArray(districts)){
- districts = Object.values(districts)
-}
-
- // まだdistrictsが無い場合
  if(!districts){
-  drawEmptyBoard()
-  return
+  console.log("districts missing → 再生成")
+  districts = createDistricts()
  }
 
  // Firebase配列対策
@@ -317,15 +311,21 @@ if(!Array.isArray(districts)){
   districts = Object.values(districts)
  }
 
+ state.districts = districts
+
+ /* -------------------------
+    ボード初期化
+ ------------------------- */
+
  westBank.innerHTML=""
  eastBank.innerHTML=""
 
-for(let i=0;i<DISTRICTS;i++){
+ for(let i=0;i<DISTRICTS;i++){
 
- const d = districts[i] || {p1:[],p2:[]}
+  const d = districts[i] || {p1:[],p2:[]}
 
- const w=document.createElement("div")
- const e=document.createElement("div")
+  const w=document.createElement("div")
+  const e=document.createElement("div")
 
   w.className="district"
   e.className="district"
@@ -352,70 +352,62 @@ for(let i=0;i<DISTRICTS;i++){
 
   cardsW.className="cardArea"
   cardsE.className="cardArea"
- 
- 
+
   if(playerNumber===state.currentPlayer){
- cardsW.style.cursor="pointer"
- cardsE.style.cursor="pointer"
-}
+   cardsW.style.cursor="pointer"
+   cardsE.style.cursor="pointer"
+  }
 
-  /* カード配置クリック */
+  /* -------------------------
+     クリック
+  ------------------------- */
 
-cardsW.addEventListener("click",()=>{
+  cardsW.onclick=()=>{
 
- console.log("west clicked",i)
+   console.log("west clicked",i)
 
- if(playerNumber!==1){
-  console.log("西岸はp1のみ")
-  return
- }
+   if(playerNumber!==1){
+    console.log("西岸はp1のみ")
+    return
+   }
 
- build(i)
+   build(i)
 
-})
+  }
 
-cardsE.addEventListener("click",()=>{
+  cardsE.onclick=()=>{
 
- console.log("east clicked",i)
+   console.log("east clicked",i)
 
- if(playerNumber!==2){
-  console.log("東岸はp2のみ")
-  return
- }
+   if(playerNumber!==2){
+    console.log("東岸はp2のみ")
+    return
+   }
 
- build(i)
+   build(i)
 
-})
+  }
+
   /* -------------------------
      カード表示
   ------------------------- */
 
-  if(Array.isArray(d.p1) && d.p1.length>0){
-
+  if(Array.isArray(d.p1)){
    d.p1.forEach(c=>{
     const card=document.createElement("div")
     card.className="cardSmall west"
-card.innerText=c && c.point ? c.point : ""
+    card.innerText=c?.point ?? ""
     cardsW.appendChild(card)
    })
-
-  }else{
-
-
   }
 
-  if(Array.isArray(d.p2) && d.p2.length>0){
-
+  if(Array.isArray(d.p2)){
    d.p2.forEach(c=>{
     const card=document.createElement("div")
     card.className="cardSmall east"
-card.innerText=c && c.point ? c.point : ""
+    card.innerText=c?.point ?? ""
     cardsE.appendChild(card)
    })
-
-  }else{
-
-
   }
 
   /* -------------------------
@@ -449,10 +441,10 @@ card.innerText=c && c.point ? c.point : ""
  }
 
  updateTurnDisplay()
+
  console.log("drawBoard called")
 
 }
-
 /* -----------------------------
  手札描画
 ----------------------------- */
