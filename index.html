@@ -92,33 +92,32 @@ function listenPlayers(){
      p1 入室
   ----------------------------- */
 
-  if(!players.p1){
+ if(!players.p1){
 
-   await set(ref(db,"rooms/"+roomId+"/players/p1"),playerId)
+ await set(ref(db,"rooms/"+roomId+"/players/p1"),playerId)
 
-    onDisconnect(ref(db,"rooms/"+roomId)).remove()
+ playerNumber=1
 
-   onDisconnect(ref(db,"rooms/"+roomId+"/players/p1")).remove()
+ onDisconnect(ref(db,"rooms/"+roomId)).remove()
+ onDisconnect(ref(db,"rooms/"+roomId+"/players/p1")).remove()
 
-   playerNumber=1
-   return
-  }
+ return
+}
 
   /* -----------------------------
      p2 入室
   ----------------------------- */
 
-  if(!players.p2 && players.p1!==playerId){
+if(!players.p2 && players.p1!==playerId){
 
-   await set(ref(db,"rooms/"+roomId+"/players/p2"),playerId)
+ await set(ref(db,"rooms/"+roomId+"/players/p2"),playerId)
 
-    onDisconnect(ref(db,"rooms/"+roomId)).remove()
+ playerNumber=2
 
-   onDisconnect(ref(db,"rooms/"+roomId+"/players/p2")).remove()
+ onDisconnect(ref(db,"rooms/"+roomId+"/players/p2")).remove()
 
-   playerNumber=2
-   return
-  }
+ return
+}
 
   /* -----------------------------
      既存プレイヤー判定
