@@ -156,10 +156,14 @@ function listenState(){
 
  onValue(stateRef,snap=>{
 
-  const s = snap.val()
-  if(!s) return
+const s = snap.val()
 
-  state = s
+if(!s || !s.districts){
+ console.log("state未完成")
+ return
+}
+
+state = s
 
   console.log("state received")
 
