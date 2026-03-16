@@ -92,9 +92,9 @@ function listenPlayers(){
   if(players.p1===playerId) playerNumber=1
   if(players.p2===playerId) playerNumber=2
 
-  if(players.p1 && players.p2){
-   tryStartGame()
-  }
+if(players.p1 && players.p2 && playerNumber===1){
+  tryStartGame()
+}
 
  })
 
@@ -142,6 +142,12 @@ function listenState(){
   if(!s) return
 
   state=s
+
+  // districtsが無い場合は空ボードを表示
+  if(!state.districts){
+    drawEmptyBoard()
+    return
+  }
 
   drawBoard()
   renderHand()
@@ -278,12 +284,18 @@ function drawBoard(){
 
  if(!state) return
 
-let districts = state.districts
+ let districts = state.districts
 
-// Firebase対策（配列→オブジェクトになる）
-if(!Array.isArray(districts)){
-  districts = Object.values(districts || {})
-}
+ // まだdistrictsが無い場合
+ if(!districts){
+  drawEmptyBoard()
+  return
+ }
+
+ // Firebase配列対策
+ if(!Array.isArray(districts)){
+  districts = Object.values(districts)
+ }
 
  westBank.innerHTML=""
  eastBank.innerHTML=""
