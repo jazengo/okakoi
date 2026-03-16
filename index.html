@@ -610,10 +610,10 @@ newState.hands = hands
     district安全化
  ------------------------- */
 
- if(!newState.districts[i]){
-  console.log("districtなし",i)
-  return
- }
+if(!newState.districts[i]){
+ console.log("district missing → 再生成",i)
+ newState.districts[i]={p1:[],p2:[]}
+}
 
  if(!newState.districts[i].p1){
   newState.districts[i].p1=[]
