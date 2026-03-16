@@ -147,6 +147,7 @@ async function tryStartGame(){
 ----------------------------- */
 
 function listenState(){
+    console.log("listenState start")
 
  onValue(ref(db,"rooms/"+roomId+"/state"),snap=>{
 
