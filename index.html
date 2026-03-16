@@ -241,84 +241,103 @@ function drawBoard(){
   const d = districts[i]
   if(!d) continue
 
+  /* -------------------------
+     地区コンテナ
+  ------------------------- */
+
   const w=document.createElement("div")
   const e=document.createElement("div")
 
   w.className="district"
   e.className="district"
 
-cardsW.onclick=()=>{
- if(playerNumber===1 && state.currentPlayer===1){
-  build(i)
- }
-}
+  /* -------------------------
+     タイトル
+  ------------------------- */
 
-cardsE.onclick=()=>{
- if(playerNumber===2 && state.currentPlayer===2){
-  build(i)
- }
-}
-
-}
-
-cardsE.onclick=()=>{
- if(playerNumber===2 && state.currentPlayer===2){
-  build(i)
- }
-}
-  const p1score=score(d.p1)
-  const p2score=score(d.p2)
-
-  /* タイトル */
   const titleW=document.createElement("div")
-  titleW.className="title"
-  titleW.innerText="地区"+(i+1)
-
   const titleE=document.createElement("div")
+
+  titleW.className="title"
   titleE.className="title"
+
+  titleW.innerText="地区"+(i+1)
   titleE.innerText="地区"+(i+1)
 
-  /* カード表示エリア */
-const cardsW=document.createElement("div")
-const cardsE=document.createElement("div")
+  /* -------------------------
+     カードエリア
+  ------------------------- */
 
-cardsW.className="cardArea"
-cardsE.className="cardArea"
+  const cardsW=document.createElement("div")
+  const cardsE=document.createElement("div")
 
-if(!d.p1 || d.p1.length===0){
- cardsW.innerText="ここにカードを置く"
-}
+  cardsW.className="cardArea"
+  cardsE.className="cardArea"
 
-if(!d.p2 || d.p2.length===0){
- cardsE.innerText="ここにカードを置く"
-}
+  /* カード配置クリック */
 
-  if(Array.isArray(d.p1)){
+  cardsW.onclick=()=>{
+   if(playerNumber===1 && state.currentPlayer===1){
+    build(i)
+   }
+  }
+
+  cardsE.onclick=()=>{
+   if(playerNumber===2 && state.currentPlayer===2){
+    build(i)
+   }
+  }
+
+  /* -------------------------
+     カード表示
+  ------------------------- */
+
+  if(Array.isArray(d.p1) && d.p1.length>0){
+
    d.p1.forEach(c=>{
     const card=document.createElement("div")
     card.className="cardSmall west"
-    card.innerText=c.point
+    card.innerText=c?.point ?? ""
     cardsW.appendChild(card)
    })
+
+  }else{
+
+   cardsW.innerText="ここにカードを置く"
+
   }
 
-  if(Array.isArray(d.p2)){
+  if(Array.isArray(d.p2) && d.p2.length>0){
+
    d.p2.forEach(c=>{
     const card=document.createElement("div")
     card.className="cardSmall east"
-    card.innerText=c.point
+    card.innerText=c?.point ?? ""
     cardsE.appendChild(card)
    })
+
+  }else{
+
+   cardsE.innerText="ここにカードを置く"
+
   }
 
-  /* スコア */
-  const scoreW=document.createElement("div")
-  scoreW.className="score"
-  scoreW.innerText="西岸:"+p1score
+  /* -------------------------
+     スコア
+  ------------------------- */
 
+  const scoreW=document.createElement("div")
   const scoreE=document.createElement("div")
+
+  scoreW.className="score"
   scoreE.className="score"
-  scoreE.innerText="東岸:"+p2score
+
+  scoreW.innerText="西岸:"+score(d.p1)
+  scoreE.innerText="東岸:"+score(d.p2)
+
+  /* -------------------------
+     組み立て
+  ------------------------- */
 
   w.appendChild(titleW)
   w.appendChild(cardsW)
@@ -330,9 +349,11 @@ if(!d.p2 || d.p2.length===0){
 
   westBank.appendChild(w)
   eastBank.appendChild(e)
+
  }
 
  updateTurnDisplay()
+
 }
 
 /* -----------------------------
