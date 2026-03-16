@@ -194,46 +194,48 @@ let lastPhase = null
 
 function listenState(){
 
- console.log("listenState start")
+  console.log("listenState start")
 
- const stateRef = ref(db,"rooms/"+roomId+"/state")
+  const stateRef = ref(db,"rooms/"+roomId+"/state")
 
- onValue(stateRef,snap=>{
+  onValue(stateRef,(snap)=>{
 
-  const s = snap.val()
+    const s = snap.val()
 
-  console.log("state snapshot =", s)
+    console.log("state snapshot =", s)
 
-  if(!s) return
+    if(!s) return
 
-  /* フェーズ変化検出 */
-  if(lastPhase !== s.phase){
+    /* フェーズ変化検出 */
+    if(lastPhase !== s.phase){
 
-    if(s.phase === "build"){
-      console.log("建設フェーズ開始")
+      if(s.phase === "build"){
+        console.log("建設フェーズ開始")
+      }
+
+      if(s.phase === "flood"){
+        console.log("洪水フェーズ開始")
+        runFloodPhase()
+      }
+
+      /* ← これが抜けていた */
+      lastPhase = s.phase
     }
 
-  if(s.phase === "flood"){
-  console.log("洪水フェーズ開始")
+    state = s
 
-  runFloodPhase()
+    console.log("state received")
 
-}
-  lastPhase = s.phase
+    /* カード選択リセット */
+    selectedCard = null
 
-  state = s
+    drawBoard()
+    renderHand()
+    updateTurnDisplay()
+    updatePlayerSide()
+    renderLogs()
 
-  console.log("state received")
-
-   /* 追加：カード選択リセット */
-  selectedCard = null
-
-  drawBoard()
-  renderHand()
-  updateTurnDisplay()
-  updatePlayerSide()
-
- })
+  })
 
 }
 /* -----------------------------
@@ -439,12 +441,16 @@ function runFloodPhase(){
 
  /* 履歴 */
 
- addLog(
-  "地区"+(i+1)+
-  " / "+result+
-  " / 流された集落:"+washed
- )
+const logText =
+ "地区"+(i+1)+
+ " / "+result+
+ " / 流された集落:"+washed
 
+addLog(logText)
+
+/* 履歴保存 */
+if(!newState.logs) newState.logs=[]
+newState.logs.unshift(logText)
  /* 洪水地区登録 */
 
  newState.floodedDistricts.push(i)
@@ -757,6 +763,26 @@ function addLog(text){
  d.innerText = text
 
  logDiv.prepend(d)
+
+}
+
+function renderLogs(){
+
+ if(!state) return
+
+ const logDiv = document.getElementById("log")
+
+ logDiv.innerHTML=""
+
+ const logs = state.logs || []
+
+ logs.forEach(text=>{
+
+  const d=document.createElement("div")
+  d.innerText=text
+  logDiv.appendChild(d)
+
+ })
 
 }
 
