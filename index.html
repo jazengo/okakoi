@@ -193,11 +193,27 @@ function drawEmptyBoard(){
   titleW.innerText="地区"+(i+1)
   titleE.innerText="地区"+(i+1)
 
-  const areaW=document.createElement("div")
-  const areaE=document.createElement("div")
+const areaW=document.createElement("div")
+const areaE=document.createElement("div")
 
-  areaW.className="cardArea"
-  areaE.className="cardArea"
+areaW.className="cardArea"
+areaE.className="cardArea"
+
+areaW.addEventListener("click",()=>{
+ console.log("west empty clicked",i)
+
+ if(playerNumber===state?.currentPlayer){
+  build(i)
+ }
+})
+
+areaE.addEventListener("click",()=>{
+ console.log("east empty clicked",i)
+
+ if(playerNumber===state?.currentPlayer){
+  build(i)
+ }
+})
 //削除
   //areaW.innerText="カードを置く"
   //areaE.innerText="カードを置く"
@@ -367,13 +383,29 @@ if(!Array.isArray(districts)){
   /* カード配置クリック */
 
 cardsW.addEventListener("click",()=>{
+
  console.log("west clicked",i)
+
+ if(playerNumber!==1){
+  console.log("西岸はp1のみ")
+  return
+ }
+
  build(i)
+
 })
 
 cardsE.addEventListener("click",()=>{
+
  console.log("east clicked",i)
+
+ if(playerNumber!==2){
+  console.log("東岸はp2のみ")
+  return
+ }
+
  build(i)
+
 })
   /* -------------------------
      カード表示
