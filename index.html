@@ -221,6 +221,9 @@ function listenState(){
 
   console.log("state received")
 
+   /* 追加：カード選択リセット */
+  selectedCard = null
+
   drawBoard()
   renderHand()
   updateTurnDisplay()
@@ -528,6 +531,11 @@ if(!Array.isArray(hands)){
 
 const hand = hands[playerNumber-1]
 if(!Array.isArray(hand)) return
+
+if(selectedCard !== null && selectedCard >= hand.length){
+ selectedCard = null
+}
+
 
  if(!hand) return
 
