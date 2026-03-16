@@ -599,9 +599,14 @@ function build(i){
   return
  }
 
- if(!Array.isArray(newState.hands)){
-  newState.hands = Object.values(newState.hands)
- }
+if(!newState.hands){
+ console.log("hands missing")
+ return
+}
+
+if(!Array.isArray(newState.hands)){
+ newState.hands = Object.values(newState.hands)
+}
 
  const hand = newState.hands[playerNumber-1]
 
