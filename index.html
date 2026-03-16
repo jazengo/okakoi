@@ -82,46 +82,83 @@ listenState()
 
 function listenPlayers(){
 
- onValue(ref(db,"rooms/"+roomId+"/players"), async snap => {
+ const playersRef = ref(db,"rooms/"+roomId+"/players")
+
+ onValue(playersRef, async snap => {
 
   const players = snap.val() || {}
+
+  /* -----------------------------
+     プレイヤー数確認
+  ----------------------------- */
+
+  const ids = Object.values(players)
+
+  if(ids.length === 0){
+   console.log("プレイヤー0人 → ルーム削除")
+   remove(ref(db,"rooms/"+roomId))
+   return
+  }
+
+  /* -----------------------------
+     p1 入室
+  ----------------------------- */
 
   if(!players.p1){
 
    await set(ref(db,"rooms/"+roomId+"/players/p1"),playerId)
 
-   playerNumber=1
+   playerNumber = 1
 
-   onDisconnect(ref(db,"rooms/"+roomId)).remove()
    onDisconnect(ref(db,"rooms/"+roomId+"/players/p1")).remove()
+
+   console.log("p1入室")
 
   }
 
-  if(!players.p2 && players.p1!==playerId){
+  /* -----------------------------
+     p2 入室
+  ----------------------------- */
+
+  else if(!players.p2 && players.p1 !== playerId){
 
    await set(ref(db,"rooms/"+roomId+"/players/p2"),playerId)
 
-   playerNumber=2
+   playerNumber = 2
 
    onDisconnect(ref(db,"rooms/"+roomId+"/players/p2")).remove()
 
+   console.log("p2入室")
+
   }
 
-  if(players.p1===playerId) playerNumber=1
-  if(players.p2===playerId) playerNumber=2
+  /* -----------------------------
+     既存プレイヤー判定
+  ----------------------------- */
+
+  if(players.p1 === playerId) playerNumber = 1
+  if(players.p2 === playerId) playerNumber = 2
+
+  /* -----------------------------
+     UI更新
+  ----------------------------- */
 
   if(playerNumber){
    renderHand()
    updatePlayerSide()
   }
 
-  if(players.p1 && players.p2 && playerNumber===1){
+  /* -----------------------------
+     ゲーム開始
+  ----------------------------- */
 
-   get(ref(db,"rooms/"+roomId+"/state")).then(snap=>{
-    if(!snap.exists()){
-     tryStartGame()
-    }
-   })
+  if(players.p1 && players.p2 && playerNumber === 1){
+
+   const stateSnap = await get(ref(db,"rooms/"+roomId+"/state"))
+
+   if(!stateSnap.exists()){
+    tryStartGame()
+   }
 
   }
 
