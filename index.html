@@ -450,6 +450,13 @@ newState.floodDeck = floodDeck
     ランダム地区
  -------------------- */
 
+if(!newState.floodDeck || newState.floodDeck.length === 0){
+ newState.logs.unshift("洪水カード終了")
+ newState.phase = "build"
+ set(ref(db,"rooms/"+roomId+"/state"),newState)
+ return
+}
+
 const floodCard = drawFlood(newState.floodDeck)
 
 const i = floodCard.district
@@ -561,14 +568,19 @@ if(newState.floodedDistricts.length >= 7){
  return
 }
 
- /* --------------------
-    カード補充
- -------------------- */
+/* --------------------
+   カード補充
+-------------------- */
 
-for(let p=0;p<2;p++){
+for(let player=0; player<2; player++){
 
- if(newState.buildDeck.length > 0){
-  newState.hands[p].push(drawBuild(newState.buildDeck))
+ if(newState.buildDeck && newState.buildDeck.length > 0){
+
+  if(!newState.hands[player])
+   newState.hands[player] = []
+
+  newState.hands[player].push(drawBuild(newState.buildDeck))
+
  }
 
 }
