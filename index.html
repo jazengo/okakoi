@@ -87,128 +87,6 @@ function listenPlayers(){
  onValue(playersRef, async snap => {
 
   const players = snap.val() || {}
-
-  /* -----------------------------
-     プレイヤー数確認
-  ----------------------------- */
-
-  const ids = Object.values(players)
-
-  if(ids.length === 0){
-   console.log("プレイヤー0人 → ルーム削除")
-   remove(ref(db,"rooms/"+roomId))
-   return
-  }
-
-  /* -----------------------------
-     p1 入室
-  ----------------------------- */
-
-  if(!players.p1){
-
-   await set(ref(db,"rooms/"+roomId+"/players/p1"),playerId)
-
-   playerNumber = 1
-
-   onDisconnect(ref(db,"rooms/"+roomId+"/players/p1")).remove()
-
-   console.log("p1入室")
-
-  }
-
-  /* -----------------------------
-     p2 入室
-  ----------------------------- */
-
-  else if(!players.p2 && players.p1 !== playerId){
-
-   await set(ref(db,"rooms/"+roomId+"/players/p2"),playerId)
-
-   playerNumber = 2
-
-   onDisconnect(ref(db,"rooms/"+roomId+"/players/p2")).remove()
-
-   console.log("p2入室")
-
-  }
-
-  /* -----------------------------
-     既存プレイヤー判定
-  ----------------------------- */
-
-  if(players.p1 === playerId) playerNumber = 1
-  if(players.p2 === playerId) playerNumber = 2
-
-  /* -----------------------------
-     UI更新
-  ----------------------------- */
-
-  if(playerNumber){
-   renderHand()
-   updatePlayerSide()
-  }
-
-  /* -----------------------------
-     ゲーム開始
-  ----------------------------- */
-
-  if(players.p1 && players.p2 && playerNumber === 1){
-
-   const stateSnap = await get(ref(db,"rooms/"+roomId+"/state"))
-
-   if(!stateSnap.exists()){
-    tryStartGame()
-   }
-
-  }
-
- })
-
-}
-/* -----------------------------
- ゲーム開始
------------------------------ */
-
-async function tryStartGame(){
-
- const snap = await get(ref(db,"rooms/"+roomId+"/state"))
-
- if(snap.exists()) return
- if(playerNumber!==1) return
-
- const deck=createDeck()
-
- const newState={
-
-  phase:"build",
-  started:true,
-  districts:createDistricts(),
-  hands:createHands(deck),
-  floodDeck:deck,
-  currentPlayer:1,
-  round:1
-
- }
-
- console.log("ゲーム開始", newState)
- set(ref(db,"rooms/"+roomId+"/state"),newState).then(()=>{
- console.log("state saved")
-})
-
- 
-}
-
-/* -----------------------------
- state同期
------------------------------ */
-
-function listenPlayers(){
-
- const playersRef = ref(db,"rooms/"+roomId+"/players")
-
- onValue(playersRef, async snap => {
-
-  const players = snap.val() || {}
   const ids = Object.values(players)
 
   /* 一度でもプレイヤーが入ったか記録 */
@@ -268,6 +146,68 @@ function listenPlayers(){
   }
 
  })
+
+}
+/* -----------------------------
+ ゲーム開始
+----------------------------- */
+
+async function tryStartGame(){
+
+ const snap = await get(ref(db,"rooms/"+roomId+"/state"))
+
+ if(snap.exists()) return
+ if(playerNumber!==1) return
+
+ const deck=createDeck()
+
+ const newState={
+
+  phase:"build",
+  started:true,
+  districts:createDistricts(),
+  hands:createHands(deck),
+  floodDeck:deck,
+  currentPlayer:1,
+  round:1
+
+ }
+
+ console.log("ゲーム開始", newState)
+ set(ref(db,"rooms/"+roomId+"/state"),newState).then(()=>{
+ console.log("state saved")
+})
+
+ 
+}
+
+/* -----------------------------
+ state同期
+----------------------------- */
+
+function listenState(){
+
+ console.log("listenState start")
+
+ const stateRef = ref(db,"rooms/"+roomId+"/state")
+
+onValue(stateRef,snap=>{
+
+ const s = snap.val()
+
+ console.log("state snapshot =", s)
+
+ 
+ state = s
+
+ console.log("state received")
+
+ drawBoard()
+ renderHand()
+ updateTurnDisplay()
+ updatePlayerSide()
+
+})
 
 }
 
