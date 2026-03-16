@@ -21,7 +21,731 @@ const firebaseConfig = {
  storageBucket: "okakoi.firebasestorage.app",
  messagingSenderId: "359327536081",
  appId: "1:359327536081:web:5e4c85e194f935a01bc6f0"
+};<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>御囲堤ゲーム</title>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+/* -----------------------------
+ Firebase
+----------------------------- */
+
+const firebaseConfig = {
+ apiKey: "AIzaSyC9tAyMDg-vWo2HacWRV3zODrfqIIoNHuw",
+ authDomain: "okakoi.firebaseapp.com",
+ databaseURL: "https://okakoi-default-rtdb.firebaseio.com",
+ projectId: "okakoi",
+ storageBucket: "okakoi.firebasestorage.app",
+ messagingSenderId: "359327536081",
+ appId: "1:359327536081:web:5e4c85e194f935a01bc6f0"
 };
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+/* -----------------------------
+ 基本設定
+----------------------------- */
+
+const DISTRICTS = 7
+
+const params = new URLSearchParams(location.search)
+let roomId = params.get("room")
+
+if(!roomId){
+ roomId = Math.random().toString(36).substring(2,8)
+ location.search="?room="+roomId
+}
+
+let playerId = Math.random().toString(36).substring(2,10)
+let playerNumber = null
+
+let selectedCard = null
+let state = null
+
+let westBank
+let eastBank
+let handDiv
+let turnDisplay
+
+/* -----------------------------
+ DOM準備
+----------------------------- */
+
+document.addEventListener("DOMContentLoaded",()=>{
+
+ westBank=document.getElementById("westBank")
+ eastBank=document.getElementById("eastBank")
+ handDiv=document.getElementById("hand")
+ turnDisplay=document.getElementById("turnDisplay")
+
+ listenPlayers()
+ listenState()
+
+})
+
+/* -----------------------------
+ プレイヤー入室
+----------------------------- */
+
+function listenPlayers(){
+
+ onValue(ref(db,"rooms/"+roomId+"/players"), async snap => {
+
+  const players = snap.val() || {}
+
+  if(!players.p1){
+   await set(ref(db,"rooms/"+roomId+"/players/p1"),playerId)
+   playerNumber=1
+   return
+  }
+
+  if(!players.p2 && players.p1!==playerId){
+   await set(ref(db,"rooms/"+roomId+"/players/p2"),playerId)
+   playerNumber=2
+   return
+  }
+
+  if(players.p1===playerId) playerNumber=1
+  if(players.p2===playerId) playerNumber=2
+
+  if(players.p1 && players.p2){
+   tryStartGame()
+  }
+
+ })
+
+}
+
+/* -----------------------------
+ ゲーム開始
+----------------------------- */
+
+async function tryStartGame(){
+
+ const snap = await get(ref(db,"rooms/"+roomId+"/state"))
+
+ if(snap.exists()) return
+
+ if(playerNumber!==1) return
+
+ const deck=createDeck()
+
+ const newState={
+
+  started:true,
+  districts:createDistricts(),
+  hands:createHands(deck),
+  floodDeck:deck,
+  currentPlayer:1,
+  round:1
+
+ }
+
+ set(ref(db,"rooms/"+roomId+"/state"),newState)
+
+}
+
+/* -----------------------------
+ state同期
+----------------------------- */
+
+function listenState(){
+
+ onValue(ref(db,"rooms/"+roomId+"/state"),snap=>{
+
+  const s=snap.val()
+
+  if(!s) return
+
+  state=s
+
+  drawBoard()
+  renderHand()
+
+ })
+
+}
+
+/* -----------------------------
+ データ生成
+----------------------------- */
+
+function createDistricts(){
+
+ const arr=[]
+
+ for(let i=0;i<DISTRICTS;i++){
+  arr.push({p1:[],p2:[]})
+ }
+
+ return arr
+}
+
+function createDeck(){
+
+ const deck=[]
+
+ function add(name,point,count){
+  for(let i=0;i<count;i++){
+   deck.push({name,point})
+  }
+ }
+
+ add("ハザードマップ",1,24)
+ add("水門",2,18)
+ add("堤防",3,13)
+ add("ダム",4,8)
+
+ deck.sort(()=>Math.random()-0.5)
+
+ return deck
+}
+
+function drawFlood(deck){
+ return deck.pop()
+}
+
+function drawVillage(){
+ return {name:"集落",point:0}
+}
+
+function createHands(deck){
+
+ const hands=[[],[]]
+
+ for(let p=0;p<2;p++){
+
+  for(let i=0;i<4;i++)
+   hands[p].push(drawFlood(deck))
+
+  for(let i=0;i<3;i++)
+   hands[p].push(drawVillage())
+
+ }
+
+ return hands
+}
+
+/* -----------------------------
+ スコア
+----------------------------- */
+
+function score(cards){
+
+ if(!Array.isArray(cards)) return 0
+
+ return cards.reduce((a,c)=>a+(c?.point||0),0)
+
+}
+
+/* -----------------------------
+ ボード描画
+----------------------------- */
+
+function drawBoard(){
+
+ if(!state) return
+
+let districts = state.districts
+
+// Firebase対策（配列→オブジェクトになる）
+if(!Array.isArray(districts)){
+  districts = Object.values(districts || {})
+}
+
+ westBank.innerHTML=""
+ eastBank.innerHTML=""
+
+ for(let i=0;i<districts.length;i++){
+
+  const d = districts[i]
+  if(!d) continue
+
+  /* -------------------------
+     地区コンテナ
+  ------------------------- */
+
+  const w=document.createElement("div")
+  const e=document.createElement("div")
+
+  w.className="district"
+  e.className="district"
+
+  /* -------------------------
+     タイトル
+  ------------------------- */
+
+  const titleW=document.createElement("div")
+  const titleE=document.createElement("div")
+
+  titleW.className="title"
+  titleE.className="title"
+
+  titleW.innerText="地区"+(i+1)
+  titleE.innerText="地区"+(i+1)
+
+  /* -------------------------
+     カードエリア
+  ------------------------- */
+
+  const cardsW=document.createElement("div")
+  const cardsE=document.createElement("div")
+
+  cardsW.className="cardArea"
+  cardsE.className="cardArea"
+
+  /* カード配置クリック */
+
+  cardsW.onclick=()=>{
+   if(playerNumber===1 && state.currentPlayer===1){
+    build(i)
+   }
+  }
+
+  cardsE.onclick=()=>{
+   if(playerNumber===2 && state.currentPlayer===2){
+    build(i)
+   }
+  }
+
+  /* -------------------------
+     カード表示
+  ------------------------- */
+
+  if(Array.isArray(d.p1) && d.p1.length>0){
+
+   d.p1.forEach(c=>{
+    const card=document.createElement("div")
+    card.className="cardSmall west"
+card.innerText=c && c.point ? c.point : ""
+    cardsW.appendChild(card)
+   })
+
+  }else{
+
+   cardsW.innerText="ここにカードを置く"
+
+  }
+
+  if(Array.isArray(d.p2) && d.p2.length>0){
+
+   d.p2.forEach(c=>{
+    const card=document.createElement("div")
+    card.className="cardSmall east"
+card.innerText=c && c.point ? c.point : ""
+    cardsE.appendChild(card)
+   })
+
+  }else{
+
+   cardsE.innerText="ここにカードを置く"
+
+  }
+
+  /* -------------------------
+     スコア
+  ------------------------- */
+
+  const scoreW=document.createElement("div")
+  const scoreE=document.createElement("div")
+
+  scoreW.className="score"
+  scoreE.className="score"
+
+  scoreW.innerText="西岸:"+score(d.p1)
+  scoreE.innerText="東岸:"+score(d.p2)
+
+  /* -------------------------
+     組み立て
+  ------------------------- */
+
+  w.appendChild(titleW)
+  w.appendChild(cardsW)
+  w.appendChild(scoreW)
+
+  e.appendChild(titleE)
+  e.appendChild(cardsE)
+  e.appendChild(scoreE)
+
+  westBank.appendChild(w)
+  eastBank.appendChild(e)
+
+ }
+
+ updateTurnDisplay()
+
+}
+
+/* -----------------------------
+ 手札描画
+----------------------------- */
+
+function renderHand(){
+
+ if(!state || !playerNumber) return
+
+ handDiv.innerHTML=""
+
+if(!state.hands) return
+const hand=state.hands[playerNumber-1]
+if(!Array.isArray(hand)) return
+
+ if(!hand) return
+
+ hand.forEach((c,i)=>{
+
+  const d=document.createElement("div")
+
+  d.className="handCard"
+
+  if(i===selectedCard)
+   d.classList.add("selected")
+
+  d.innerHTML=c.name+"<br>"+c.point
+
+  d.onclick=()=>{
+
+   selectedCard=i
+   renderHand()
+
+  }
+
+  handDiv.appendChild(d)
+
+ })
+
+}
+
+/* -----------------------------
+ ターン表示
+----------------------------- */
+
+function updateTurnDisplay(){
+
+ if(!state) return
+
+ if(state.currentPlayer===1){
+  turnDisplay.innerText="西"
+  turnDisplay.className="turnWest"
+ }else{
+  turnDisplay.innerText="東"
+  turnDisplay.className="turnEast"
+ }
+
+}
+
+/* -----------------------------
+ カード配置
+----------------------------- */
+
+function build(i){
+
+ if(!state) return
+ if(playerNumber!==state.currentPlayer) return
+ if(selectedCard===null) return
+
+ const newState=JSON.parse(JSON.stringify(state))
+
+ const hand=newState.hands[playerNumber-1]
+
+ if(!hand) return
+ if(selectedCard>=hand.length) return
+
+ const card=hand.splice(selectedCard,1)[0]
+
+ if(!card) return
+
+ if(!newState.districts[i]) return
+
+ if(!newState.districts[i].p1) newState.districts[i].p1=[]
+ if(!newState.districts[i].p2) newState.districts[i].p2=[]
+
+ newState.districts[i]["p"+playerNumber].push(card)
+
+ newState.currentPlayer = playerNumber===1?2:1
+
+ selectedCard=null
+ renderHand()
+
+ set(ref(db,"rooms/"+roomId+"/state"),newState)
+
+}
+</script>
+
+
+
+<style>
+  .villageHighlight{
+outline:4px solid gold;
+background:#fff7cc;
+transform:scale(1.2);
+box-shadow:0 0 6px gold;
+}
+
+body{
+margin:0;
+font-family:sans-serif;
+background:#dff2ff;
+text-align:center;
+}
+
+#container{
+display:grid;
+grid-template-columns:1fr 140px 1fr 260px;
+gap:6px;
+padding:6px;
+}
+
+.bank{
+display:flex;
+flex-direction:column;
+gap:6px;
+}
+
+.district{
+background:#eaffea;
+border:3px solid #333;
+border-radius:12px;
+padding:4px;
+min-height:80px;
+}
+
+.flooded{
+background:#b9e3ff;
+}
+
+.title{
+font-weight:bold;
+font-size:12px;
+}
+
+.score{
+font-size:22px;
+font-weight:bold;
+color:#222;
+}
+
+.cardSmall{
+display:inline-block;
+width:40px;
+height:24px;
+border-radius:6px;
+margin:1px;
+font-size:12px;
+font-weight:bold;
+color:white;
+line-height:24px;
+}
+
+.east{background:#d33}
+.west{background:#2d6cdf}
+
+.cardHiddenEast{
+width:40px;
+height:12px;
+background:#ffb3b3;
+margin:1px;
+border-radius:3px;
+}
+
+.cardHiddenWest{
+width:40px;
+height:12px;
+background:#b7ccff;
+margin:1px;
+border-radius:3px;
+}
+
+.villageHighlight{
+outline:3px solid gold;
+transform:scale(1.15);
+}
+
+#river{
+background:linear-gradient(90deg,#4fb0ff,#1e78d7);
+border-radius:40px;
+}
+
+.handCard{
+display:inline-block;
+background:white;
+border:3px solid #333;
+border-radius:12px;
+width:110px;
+height:140px;
+margin:6px;
+cursor:pointer;
+font-size:18px;
+font-weight:bold;
+}
+
+.selected{
+outline:4px solid orange;
+}
+
+#log{
+background:white;
+border:2px solid #333;
+border-radius:10px;
+padding:4px;
+height:420px;
+overflow:auto;
+font-size:13px;
+text-align:left;
+}
+
+#aidPanel{
+margin-top:6px;
+}
+
+.aidButton{
+padding:8px 16px;
+margin:4px;
+font-size:16px;
+cursor:pointer;
+}
+
+.loserEast{
+border:4px solid red;
+box-shadow:0 0 10px red;
+}
+
+.loserWest{
+border:4px solid blue;
+box-shadow:0 0 10px blue;
+}
+#turnDisplay{
+position:absolute;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+font-size:40px;
+font-weight:bold;
+pointer-events:none;
+}
+
+.turnEast{
+color:#1e78d7;
+}
+
+.turnWest{
+color:#d33;
+}
+
+#river{
+position:relative;
+background:linear-gradient(90deg,#4fb0ff,#1e78d7);
+border-radius:40px;
+}
+#victoryScreen{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.8);
+display:none;
+align-items:center;
+justify-content:center;
+flex-direction:column;
+font-size:48px;
+color:white;
+z-index:1000;
+}
+
+#victoryText{
+margin-bottom:30px;
+}
+
+#victoryScreen button{
+font-size:24px;
+padding:12px 30px;
+cursor:pointer;
+}
+#scoreTable{
+background:white;
+border:2px solid #333;
+border-radius:10px;
+padding:8px;
+margin-top:6px;
+font-size:14px;
+text-align:left;
+}
+
+#scoreTable div{
+padding:2px 0;
+}
+
+.cardArea{
+min-height:50px;
+border:2px dashed #666;
+border-radius:8px;
+padding:6px;
+margin:6px 0;
+background:#ffffffcc;
+display:flex;
+flex-wrap:wrap;
+gap:3px;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>治水ボードゲーム</h1>
+
+<div id="container">
+
+<div class="bank" id="westBank"></div>
+
+<div id="river">
+  <div id="turnDisplay"></div>
+</div>
+
+<div class="bank" id="eastBank"></div>
+
+<div>
+
+<h3>履歴</h3>
+<div id="log"></div>
+
+<div id="aidPanel"></div>
+
+<h3>建物の強さ</h3>
+<div id="scoreTable">
+
+<div>🗺 ハザードマップ　1点</div>
+<div>🚪 水門　　　　　2点</div>
+<div>🧱 堤防　　　　　3点</div>
+<div>🏞 ダム　　　　　4点</div>
+<div>🏠 集落　　　　　0点</div>
+
+</div>
+
+</div>
+
+</div>
+
+<h3>手札</h3>
+<div id="hand"></div>
+
+
+
+<div id="victoryScreen">
+<div id="victoryText"></div>
+<button onclick="location.reload()">もう一度遊ぶ</button>
+</div>
+
+</body>
+</html>
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
