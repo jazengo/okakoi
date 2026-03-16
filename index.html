@@ -86,15 +86,7 @@ function listenPlayers(){
 
   const players = snap.val() || {}
 
-  /* -----------------------------
-     プレイヤー0人 → ルーム削除
-  ----------------------------- */
 
-  if(!players.p1 && !players.p2){
-   console.log("プレイヤー0人 → ルーム削除")
-   remove(ref(db,"rooms/"+roomId))
-   return
-  }
 
   /* -----------------------------
      p1 入室
@@ -103,6 +95,8 @@ function listenPlayers(){
   if(!players.p1){
 
    await set(ref(db,"rooms/"+roomId+"/players/p1"),playerId)
+
+    onDisconnect(ref(db,"rooms/"+roomId)).remove()
 
    onDisconnect(ref(db,"rooms/"+roomId+"/players/p1")).remove()
 
@@ -117,6 +111,8 @@ function listenPlayers(){
   if(!players.p2 && players.p1!==playerId){
 
    await set(ref(db,"rooms/"+roomId+"/players/p2"),playerId)
+
+    onDisconnect(ref(db,"rooms/"+roomId)).remove()
 
    onDisconnect(ref(db,"rooms/"+roomId+"/players/p2")).remove()
 
