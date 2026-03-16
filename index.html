@@ -543,7 +543,6 @@ function updatePlayerSide(){
 /* -----------------------------
  カード配置
 ----------------------------- */
-
 function build(i){
 
  console.log(
@@ -552,6 +551,10 @@ function build(i){
   "turn:", state?.currentPlayer,
   "selected:", selectedCard
  )
+
+ /* -------------------------
+    基本チェック
+ ------------------------- */
 
  if(!state){
   console.log("stateなし")
@@ -568,24 +571,38 @@ function build(i){
   return
  }
 
- const side = playerNumber === 1 ? "p1" : "p2"
+ /* -------------------------
+    stateコピー
+ ------------------------- */
 
- // stateコピー
  const newState = JSON.parse(JSON.stringify(state))
 
- // ★Firebase配列対策
+ /* -------------------------
+    districts安全化
+ ------------------------- */
+
+ if(!newState.districts){
+  console.log("districts missing")
+  return
+ }
+
  if(!Array.isArray(newState.districts)){
   newState.districts = Object.values(newState.districts)
  }
 
-if(!newState.hands){
+ /* -------------------------
+    hands安全化
+ ------------------------- */
+
+ if(!newState.hands){
   console.log("hands missing")
   return
-}
+ }
 
-if(!Array.isArray(newState.hands)){
+ if(!Array.isArray(newState.hands)){
   newState.hands = Object.values(newState.hands)
-}
+ }
+
  const hand = newState.hands[playerNumber-1]
 
  if(!hand){
@@ -598,27 +615,56 @@ if(!Array.isArray(newState.hands)){
   return
  }
 
- const card = hand.splice(selectedCard,1)[0]
+ /* -------------------------
+    district安全化
+ ------------------------- */
 
  if(!newState.districts[i]){
   console.log("districtなし",i)
   return
  }
 
- if(!newState.districts[i].p1) newState.districts[i].p1=[]
- if(!newState.districts[i].p2) newState.districts[i].p2=[]
+ if(!newState.districts[i].p1){
+  newState.districts[i].p1=[]
+ }
 
- // カード配置
+ if(!newState.districts[i].p2){
+  newState.districts[i].p2=[]
+ }
+
+ /* -------------------------
+    カード取り出し
+ ------------------------- */
+
+ const card = hand.splice(selectedCard,1)[0]
+
+ if(!card){
+  console.log("card missing")
+  return
+ }
+
+ /* -------------------------
+    配置
+ ------------------------- */
+
+ const side = playerNumber === 1 ? "p1" : "p2"
+
  newState.districts[i][side].push(card)
 
  console.log("カード配置",card)
 
- // ターン交代
+ /* -------------------------
+    ターン交代
+ ------------------------- */
+
  newState.currentPlayer = playerNumber === 1 ? 2 : 1
 
  selectedCard = null
 
- // Firebase更新
+ /* -------------------------
+    Firebase保存
+ ------------------------- */
+
  set(ref(db,"rooms/"+roomId+"/state"), newState)
 
 }
