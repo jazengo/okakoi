@@ -141,8 +141,7 @@ async function tryStartGame(){
  console.log("state saved")
 })
 
- set(ref(db,"rooms/"+roomId+"/state"),newState)
-
+ 
 }
 
 /* -----------------------------
@@ -544,6 +543,7 @@ function updatePlayerSide(){
  カード配置
 ----------------------------- */
 function build(i){
+   console.log("state=",state)
 
  console.log(
   "build clicked",
