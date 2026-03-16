@@ -120,6 +120,8 @@ async function tryStartGame(){
 
  const newState={
 
+    phase:"build",   // ←追加
+
   started:true,
   districts:createDistricts(),
   hands:createHands(deck),
@@ -353,17 +355,17 @@ if(!Array.isArray(districts)){
 
   /* カード配置クリック */
 
-  cardsW.onclick=()=>{
-   if(playerNumber===1 && state.currentPlayer===1){
-    build(i)
-   }
-  }
+ cardsW.onclick=()=>{
+ if(playerNumber===1 && state.currentPlayer===1 && state.phase==="build"){
+  build(i)
+ }
+}
 
-  cardsE.onclick=()=>{
-   if(playerNumber===2 && state.currentPlayer===2){
-    build(i)
-   }
-  }
+ cardsE.onclick=()=>{
+ if(playerNumber===2 && state.currentPlayer===2 && state.phase==="build"){
+  build(i)
+ }
+}
 
   /* -------------------------
      カード表示
@@ -526,6 +528,10 @@ function build(i){
  newState.districts[i]["p"+playerNumber].push(card)
 
  newState.currentPlayer = playerNumber===1?2:1
+
+ if(newState.hands[0].length===0 && newState.hands[1].length===0){
+ newState.phase="battle"
+}
 
  selectedCard=null
  renderHand()
