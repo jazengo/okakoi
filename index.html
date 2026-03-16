@@ -340,17 +340,12 @@ if(!Array.isArray(districts)){
  westBank.innerHTML=""
  eastBank.innerHTML=""
 
- for(let i=0;i<districts.length;i++){
+for(let i=0;i<DISTRICTS;i++){
 
-  const d = districts[i]
-  if(!d) continue
+ const d = districts[i] || {p1:[],p2:[]}
 
-  /* -------------------------
-     地区コンテナ
-  ------------------------- */
-
-  const w=document.createElement("div")
-  const e=document.createElement("div")
+ const w=document.createElement("div")
+ const e=document.createElement("div")
 
   w.className="district"
   e.className="district"
