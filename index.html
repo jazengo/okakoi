@@ -304,10 +304,10 @@ function createHands(deck){
 
  for(let p=0;p<2;p++){
 
-  for(let i=0;i<4;i++)
+  for(let i=0;i<2;i++)
    hands[p].push(drawFlood(deck))
 
-  for(let i=0;i<3;i++)
+  for(let i=0;i<1;i++)
    hands[p].push(drawVillage())
 
  }
@@ -332,6 +332,10 @@ function score(cards){
 ----------------------------- */
 
 function drawBoard(){
+
+while(districts.length < DISTRICTS){
+ districts.push({p1:[],p2:[]})
+}
 
  if(!state) return
 
@@ -498,7 +502,13 @@ if(!state.hands) return
  handDiv.innerHTML=""
 
 if(!state.hands) return
-const hand=state.hands[playerNumber-1]
+let hands = state.hands
+
+if(!Array.isArray(hands)){
+ hands = Object.values(hands)
+}
+
+const hand = hands[playerNumber-1]
 if(!Array.isArray(hand)) return
 
  if(!hand) return
@@ -597,7 +607,7 @@ function build(i){
     stateコピー
  ------------------------- */
 
-const newState = {...state}
+const newState = JSON.parse(JSON.stringify(state))
 
  /* -------------------------
     districts安全化
@@ -693,8 +703,8 @@ if(!newState.districts[i]){
    手札がなくなったら洪水フェーズ
 ------------------------- */
 
-const hand1 = newState.hands[0] || []
-const hand2 = newState.hands[1] || []
+const hand1 = Array.isArray(newState.hands[0]) ? newState.hands[0] : []
+const hand2 = Array.isArray(newState.hands[1]) ? newState.hands[1] : []
 
 if(hand1.length === 0 && hand2.length === 0){
  console.log("洪水フェーズ開始")
