@@ -167,6 +167,7 @@ function listenState(){
   renderHand()
 
   updateTurnDisplay()
+  updatePlayerSide() 
  })
 }
 
@@ -371,14 +372,13 @@ if(!Array.isArray(districts)){
 
 cardsW.addEventListener("click",()=>{
  console.log("district west clicked",i)
- build(i)
+ build(i,"p1")
 })
 
 cardsE.addEventListener("click",()=>{
  console.log("district east clicked",i)
- build(i)
+ build(i,"p2")
 })
-
   /* -------------------------
      カード表示
   ------------------------- */
@@ -526,7 +526,10 @@ function updatePlayerSide(){
  カード配置
 ----------------------------- */
 
-function build(i){
+function build(i,side){
+
+   if(playerNumber===1 && side!=="p1") return
+if(playerNumber===2 && side!=="p2") return
 
  console.log("build clicked",i,playerNumber,state.currentPlayer,selectedCard)
 
@@ -549,7 +552,7 @@ function build(i){
  if(!newState.districts[i].p1) newState.districts[i].p1=[]
  if(!newState.districts[i].p2) newState.districts[i].p2=[]
 
- newState.districts[i]["p"+playerNumber].push(card)
+newState.districts[i][side].push(card)
 
  newState.currentPlayer = playerNumber===1 ? 2 : 1
 
