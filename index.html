@@ -62,9 +62,9 @@ document.addEventListener("DOMContentLoaded",()=>{
  handDiv=document.getElementById("hand")
  turnDisplay=document.getElementById("turnDisplay")
 
- listenPlayers()
- listenState()
-
+ drawEmptyBoard()
+listenPlayers()
+listenState()
 })
 
 /* -----------------------------
@@ -147,6 +147,54 @@ function listenState(){
   renderHand()
 
  })
+
+}
+
+/* -----------------------------
+ 地区生成
+----------------------------- */
+
+function drawEmptyBoard(){
+
+ westBank.innerHTML=""
+ eastBank.innerHTML=""
+
+ for(let i=0;i<DISTRICTS;i++){
+
+  const w=document.createElement("div")
+  const e=document.createElement("div")
+
+  w.className="district"
+  e.className="district"
+
+  const titleW=document.createElement("div")
+  const titleE=document.createElement("div")
+
+  titleW.className="title"
+  titleE.className="title"
+
+  titleW.innerText="地区"+(i+1)
+  titleE.innerText="地区"+(i+1)
+
+  const areaW=document.createElement("div")
+  const areaE=document.createElement("div")
+
+  areaW.className="cardArea"
+  areaE.className="cardArea"
+
+  areaW.innerText="カードを置く"
+  areaE.innerText="カードを置く"
+
+  w.appendChild(titleW)
+  w.appendChild(areaW)
+
+  e.appendChild(titleE)
+  e.appendChild(areaE)
+
+  westBank.appendChild(w)
+  eastBank.appendChild(e)
+
+ }
 
 }
 
