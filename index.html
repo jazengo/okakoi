@@ -92,7 +92,7 @@ function listenPlayers(){
      p1 入室
   ----------------------------- */
 
- if(!players.p1){
+if(!players.p1){
 
  await set(ref(db,"rooms/"+roomId+"/players/p1"),playerId)
 
@@ -101,7 +101,6 @@ function listenPlayers(){
  onDisconnect(ref(db,"rooms/"+roomId)).remove()
  onDisconnect(ref(db,"rooms/"+roomId+"/players/p1")).remove()
 
- return
 }
 
   /* -----------------------------
@@ -116,8 +115,6 @@ if(!players.p2 && players.p1!==playerId){
 
  onDisconnect(ref(db,"rooms/"+roomId+"/players/p2")).remove()
 
- return
-}
 
   /* -----------------------------
      既存プレイヤー判定
