@@ -186,32 +186,49 @@ async function tryStartGame(){
  state同期
 ----------------------------- */
 
+let lastPhase = null
+
 function listenState(){
 
  console.log("listenState start")
 
  const stateRef = ref(db,"rooms/"+roomId+"/state")
 
-onValue(stateRef,snap=>{
+ onValue(stateRef,snap=>{
 
- const s = snap.val()
+  const s = snap.val()
 
- console.log("state snapshot =", s)
+  console.log("state snapshot =", s)
 
- 
- state = s
+  if(!s) return
 
- console.log("state received")
+  /* フェーズ変化検出 */
+  if(lastPhase !== s.phase){
 
- drawBoard()
- renderHand()
- updateTurnDisplay()
- updatePlayerSide()
+    if(s.phase === "build"){
+      console.log("建設フェーズ開始")
+    }
 
-})
+    if(s.phase === "flood"){
+      console.log("洪水フェーズ開始")
+    }
+
+  }
+
+  lastPhase = s.phase
+
+  state = s
+
+  console.log("state received")
+
+  drawBoard()
+  renderHand()
+  updateTurnDisplay()
+  updatePlayerSide()
+
+ })
 
 }
-
 /* -----------------------------
  地区生成
 ----------------------------- */
