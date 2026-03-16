@@ -371,13 +371,11 @@ if(!Array.isArray(districts)){
   /* カード配置クリック */
 
 w.addEventListener("click",()=>{
- console.log("district west clicked",i)
- build(i,"p1")
+ build(i)
 })
 
 e.addEventListener("click",()=>{
- console.log("district east clicked",i)
- build(i,"p2")
+ build(i)
 })
   /* -------------------------
      カード表示
@@ -526,43 +524,46 @@ function updatePlayerSide(){
  カード配置
 ----------------------------- */
 
-function build(i,side){
+function build(i){
 
-   if(playerNumber===1 && side!=="p1") return
-if(playerNumber===2 && side!=="p2") return
+console.log(
+"build clicked",
+"player:", playerNumber,
+"turn:", state?.currentPlayer,
+"selected:", selectedCard
+)
 
- console.log("build clicked",i,playerNumber,state.currentPlayer,selectedCard)
+if(!state) return
+if(playerNumber !== state.currentPlayer) return
+if(state.phase !== "build") return
+if(selectedCard === null) return
 
- if(!state) return
- if(playerNumber!==state.currentPlayer) return
- if(state.phase!=="build") return
- if(selectedCard===null) return
+const side = playerNumber === 1 ? "p1" : "p2"
 
- const newState=JSON.parse(JSON.stringify(state))
+const newState = JSON.parse(JSON.stringify(state))
 
- const hand=newState.hands[playerNumber-1]
+const hand = newState.hands[playerNumber-1]
+if(!hand) return
+if(selectedCard >= hand.length) return
 
- if(!hand) return
- if(selectedCard>=hand.length) return
+const card = hand.splice(selectedCard,1)[0]
 
- const card=hand.splice(selectedCard,1)[0]
+if(!newState.districts[i]) return
 
- if(!newState.districts[i]) return
-
- if(!newState.districts[i].p1) newState.districts[i].p1=[]
- if(!newState.districts[i].p2) newState.districts[i].p2=[]
+if(!newState.districts[i].p1) newState.districts[i].p1=[]
+if(!newState.districts[i].p2) newState.districts[i].p2=[]
 
 newState.districts[i][side].push(card)
 
- newState.currentPlayer = playerNumber===1 ? 2 : 1
+newState.currentPlayer = playerNumber === 1 ? 2 : 1
 
- if(newState.hands[0].length===0 && newState.hands[1].length===0){
-  newState.phase="battle"
- }
+if(newState.hands[0].length === 0 && newState.hands[1].length === 0){
+newState.phase = "battle"
+}
 
- selectedCard=null
+selectedCard = null
 
- set(ref(db,"rooms/"+roomId+"/state"),newState)
+set(ref(db,"rooms/"+roomId+"/state"), newState)
 
 }
 </script>
