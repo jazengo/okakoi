@@ -390,11 +390,10 @@ card.innerText=c && c.point ? c.point : ""
 
   }else{
 
-  const labelW = document.createElement("div")
+const labelW = document.createElement("div")
 labelW.innerText="ここにカードを置く"
 labelW.style.pointerEvents="none"
 cardsW.appendChild(labelW)
-
   }
 
   if(Array.isArray(d.p2) && d.p2.length>0){
