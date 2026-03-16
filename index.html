@@ -364,6 +364,17 @@ function runFloodPhase(){
  /* stateコピー */
  const newState = JSON.parse(JSON.stringify(state))
 
+ /* hands安全化 */
+let hands = newState.hands
+if(!Array.isArray(hands)){
+  hands = Object.values(hands)
+}
+newState.hands = hands
+
+for(let p=0;p<2;p++){
+  if(!newState.hands[p]) newState.hands[p] = []
+}
+
   // ★これを追加
  if(!newState.floodLog){
    newState.floodLog = []
