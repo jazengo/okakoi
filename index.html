@@ -247,14 +247,13 @@ function drawBoard(){
   w.className="district"
   e.className="district"
 
-  w.onclick=()=>{
-   if(playerNumber===1) build(i)
-  }
+w.onclick=()=>{
+ if(playerNumber===1 && state.currentPlayer===1) build(i)
+}
 
-  e.onclick=()=>{
-   if(playerNumber===2) build(i)
-  }
-
+e.onclick=()=>{
+ if(playerNumber===2 && state.currentPlayer===2) build(i)
+}
   const p1score=score(d.p1)
   const p2score=score(d.p2)
 
@@ -268,8 +267,11 @@ function drawBoard(){
   titleE.innerText="地区"+(i+1)
 
   /* カード表示エリア */
-  const cardsW=document.createElement("div")
-  const cardsE=document.createElement("div")
+const cardsW=document.createElement("div")
+const cardsE=document.createElement("div")
+
+cardsW.className="cardArea"
+cardsE.className="cardArea"
 
   if(Array.isArray(d.p1)){
    d.p1.forEach(c=>{
@@ -610,6 +612,15 @@ text-align:left;
 
 #scoreTable div{
 padding:2px 0;
+}
+
+.cardArea{
+min-height:32px;
+border:1px dashed #999;
+border-radius:6px;
+padding:2px;
+margin:4px 0;
+background:#ffffff66;
 }
 
 </style>
