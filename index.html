@@ -196,25 +196,27 @@ function listenState(){
 
  const stateRef = ref(db,"rooms/"+roomId+"/state")
 
- onValue(stateRef,snap=>{
+onValue(stateRef,snap=>{
 
-const s = snap.val()
+ const s = snap.val()
 
-if(!s || !s.districts){
- console.log("state未完成")
- return
-}
+ console.log("state snapshot =", s)
 
-state = s
+ if(!s || !s.districts){
+  console.log("state未完成")
+  return
+ }
 
-  console.log("state received")
+ state = s
 
-  drawBoard()
-  renderHand()
-  updateTurnDisplay()
-  updatePlayerSide()
+ console.log("state received")
 
- })
+ drawBoard()
+ renderHand()
+ updateTurnDisplay()
+ updatePlayerSide()
+
+})
 
 }
 
