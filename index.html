@@ -198,24 +198,11 @@ function drawEmptyBoard(){
   titleW.innerText="地区"+(i+1)
   titleE.innerText="地区"+(i+1)
 
-const areaW=document.createElement("div")
-const areaE=document.createElement("div")
+  const areaW=document.createElement("div")
+  const areaE=document.createElement("div")
 
-areaW.className="cardArea"
-areaE.className="cardArea"
-
-areaW.addEventListener("click",()=>{
- console.log("west empty clicked",i)
- build(i)
-})
-
-areaE.addEventListener("click",()=>{
- console.log("east empty clicked",i)
- build(i)
-})
-//削除
-  //areaW.innerText="カードを置く"
-  //areaE.innerText="カードを置く"
+  areaW.className="cardArea"
+  areaE.className="cardArea"
 
   w.appendChild(titleW)
   w.appendChild(areaW)
@@ -225,9 +212,7 @@ areaE.addEventListener("click",()=>{
 
   westBank.appendChild(w)
   eastBank.appendChild(e)
-
  }
-
 }
 
 /* -----------------------------
@@ -313,7 +298,7 @@ function drawBoard(){
  let districts = state.districts
 
 if(!districts){
- drawEmptyBoard()
+ console.log("districts missing in drawBoard")
  return
 }
 
@@ -584,8 +569,7 @@ const newState = {...state}
 let districts = newState.districts
 
 if(!districts){
- console.log("districts missing")
- return
+ districts=createDistricts()
 }
 
 if(!Array.isArray(districts)){
