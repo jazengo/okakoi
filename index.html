@@ -740,23 +740,23 @@ while(districts.length < DISTRICTS){
 
 cardsW.appendChild(div)
 
-})
+});
 
 (d.p2 || []).forEach(c=>{
 
  const div=document.createElement("div")
 
  if(playerIndex===1){
-   div.textContent=c
+   div.textContent=c.name
  }
  else if(d.revealed){
-   div.textContent=c
+   div.textContent=c.name
  }
  else{
    div.textContent="？"
  }
 
- e.appendChild(div)
+ cardsE.appendChild(div)
 
 })
   /* -------------------------
