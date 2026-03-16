@@ -202,29 +202,72 @@ async function tryStartGame(){
  state同期
 ----------------------------- */
 
-function listenState(){
+function listenPlayers(){
 
- console.log("listenState start")
+ const playersRef = ref(db,"rooms/"+roomId+"/players")
 
- const stateRef = ref(db,"rooms/"+roomId+"/state")
+ onValue(playersRef, async snap => {
 
-onValue(stateRef,snap=>{
+  const players = snap.val() || {}
+  const ids = Object.values(players)
 
- const s = snap.val()
+  /* 一度でもプレイヤーが入ったか記録 */
+  if(ids.length > 0){
+   playersEverJoined = true
+  }
 
- console.log("state snapshot =", s)
+  /* プレイヤー0人になったらルーム削除 */
+  if(playersEverJoined && ids.length === 0){
+   console.log("プレイヤー0人 → ルーム削除")
+   remove(ref(db,"rooms/"+roomId))
+   return
+  }
 
- 
- state = s
+  /* p1入室 */
+  if(!players.p1){
 
- console.log("state received")
+   await set(ref(db,"rooms/"+roomId+"/players/p1"),playerId)
 
- drawBoard()
- renderHand()
- updateTurnDisplay()
- updatePlayerSide()
+   playerNumber = 1
 
-})
+   onDisconnect(ref(db,"rooms/"+roomId+"/players/p1")).remove()
+
+   console.log("p1入室")
+
+  }
+
+  /* p2入室 */
+  else if(!players.p2 && players.p1 !== playerId){
+
+   await set(ref(db,"rooms/"+roomId+"/players/p2"),playerId)
+
+   playerNumber = 2
+
+   onDisconnect(ref(db,"rooms/"+roomId+"/players/p2")).remove()
+
+   console.log("p2入室")
+
+  }
+
+  if(players.p1 === playerId) playerNumber = 1
+  if(players.p2 === playerId) playerNumber = 2
+
+  if(playerNumber){
+   renderHand()
+   updatePlayerSide()
+  }
+
+  if(players.p1 && players.p2 && playerNumber === 1){
+
+   const stateSnap = await get(ref(db,"rooms/"+roomId+"/state"))
+
+   if(!stateSnap.exists()){
+    tryStartGame()
+   }
+
+  }
+
+ })
 
 }
 
