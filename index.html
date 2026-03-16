@@ -86,55 +86,34 @@ function listenPlayers(){
 
   const players = snap.val() || {}
 
+  if(!players.p1){
 
+   await set(ref(db,"rooms/"+roomId+"/players/p1"),playerId)
 
-  /* -----------------------------
-     p1 入室
-  ----------------------------- */
+   playerNumber=1
 
-if(!players.p1){
+   onDisconnect(ref(db,"rooms/"+roomId)).remove()
+   onDisconnect(ref(db,"rooms/"+roomId+"/players/p1")).remove()
 
- await set(ref(db,"rooms/"+roomId+"/players/p1"),playerId)
+  }
 
- playerNumber=1
+  if(!players.p2 && players.p1!==playerId){
 
- onDisconnect(ref(db,"rooms/"+roomId)).remove()
- onDisconnect(ref(db,"rooms/"+roomId+"/players/p1")).remove()
+   await set(ref(db,"rooms/"+roomId+"/players/p2"),playerId)
 
-}
+   playerNumber=2
 
-  /* -----------------------------
-     p2 入室
-  ----------------------------- */
+   onDisconnect(ref(db,"rooms/"+roomId+"/players/p2")).remove()
 
-if(!players.p2 && players.p1!==playerId){
-
- await set(ref(db,"rooms/"+roomId+"/players/p2"),playerId)
-
- playerNumber=2
-
- onDisconnect(ref(db,"rooms/"+roomId+"/players/p2")).remove()
-
-
-  /* -----------------------------
-     既存プレイヤー判定
-  ----------------------------- */
+  }
 
   if(players.p1===playerId) playerNumber=1
   if(players.p2===playerId) playerNumber=2
-
-  /* -----------------------------
-     UI更新
-  ----------------------------- */
 
   if(playerNumber){
    renderHand()
    updatePlayerSide()
   }
-
-  /* -----------------------------
-     ゲーム開始
-  ----------------------------- */
 
   if(players.p1 && players.p2 && playerNumber===1){
 
