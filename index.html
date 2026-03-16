@@ -143,17 +143,17 @@ function listenState(){
 
   state=s
 
-  // districtsが無い場合は空ボードを表示
+  // districtsが無い場合は空ボード
   if(!state.districts){
     drawEmptyBoard()
-    return
+  }else{
+    drawBoard()
   }
 
-  drawBoard()
+  // 手札は必ず描画
   renderHand()
 
  })
-
 }
 
 /* -----------------------------
@@ -291,7 +291,9 @@ if(!districts){
  return
 }
 
-districts = Object.values(districts)
+if(!Array.isArray(districts)){
+ districts = Object.values(districts)
+}
 
  // まだdistrictsが無い場合
  if(!districts){
