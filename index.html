@@ -520,15 +520,58 @@ const i = floodCard.district
 
 
  /* --------------------
+   洪水7回でゲーム終了
+-------------------- */
+
+if(newState.floodedDistricts.length >= 7){
+
+ let p1Settlements = 0
+ let p2Settlements = 0
+
+ for(let i=0;i<DISTRICTS;i++){
+
+  const d = newState.districts[i] || {p1:[],p2:[]}
+
+  p1Settlements += (d.p1 || []).filter(c=>c?.name==="集落").length
+  p2Settlements += (d.p2 || []).filter(c=>c?.name==="集落").length
+
+ }
+
+ let result
+
+ if(p1Settlements > p2Settlements)
+  result = "西岸プレイヤー勝利"
+ else if(p2Settlements > p1Settlements)
+  result = "東岸プレイヤー勝利"
+ else
+  result = "引き分け"
+
+ newState.logs.unshift(
+  "最終結果 西岸集落数:"+p1Settlements+
+  " 東岸集落数:"+p2Settlements+
+  " → "+result
+ )
+
+ newState.phase = "gameover"
+
+ set(ref(db,"rooms/"+roomId+"/state"),newState)
+
+ console.log("ゲーム終了")
+
+ return
+}
+
+ /* --------------------
     カード補充
  -------------------- */
 
-if(newState.buildDeck.length > 0)
- newState.hands[p].push(drawBuild(newState.buildDeck))
+for(let p=0;p<2;p++){
 
-if(newState.buildDeck.length > 0)
- newState.hands[p].push(drawBuild(newState.buildDeck))
+ if(newState.buildDeck.length > 0){
+  newState.hands[p].push(drawBuild(newState.buildDeck))
+ }
 
+}
  /* --------------------
     次フェーズ
  -------------------- */
@@ -543,6 +586,10 @@ if(newState.buildDeck.length > 0)
 ----------------------------- */
 
 function drawBoard(){
+   if(state.phase === "gameover"){
+ turnDisplay.textContent = "ゲーム終了"
+ return
+}
 
 
 
