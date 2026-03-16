@@ -207,7 +207,9 @@ function listenState(){
 
   state = s
 
-  render()
+ drawBoard()
+renderHand()
+renderLogs()
 
   /* フェーズ処理 */
 
@@ -524,10 +526,10 @@ const i = floodCard.district
  for(let p=0;p<2;p++){
 
   if(newState.floodDeck.length > 0)
-   newState.hands[p].push(drawFlood(newState.floodDeck))
+ newState.hands[p].push(drawBuild(newState.buildDeck))
 
   if(newState.floodDeck.length > 0)
-   newState.hands[p].push(drawFlood(newState.floodDeck))
+   newState.hands[p].push(drawBuild(newState.buildDeck))
 
  }
 
