@@ -297,7 +297,7 @@ function drawBoard(){
    d.p1.forEach(c=>{
     const card=document.createElement("div")
     card.className="cardSmall west"
-    card.innerText=c?.point ?? ""
+card.innerText=c && c.point ? c.point : ""
     cardsW.appendChild(card)
    })
 
@@ -312,7 +312,7 @@ function drawBoard(){
    d.p2.forEach(c=>{
     const card=document.createElement("div")
     card.className="cardSmall east"
-    card.innerText=c?.point ?? ""
+card.innerText=c && c.point ? c.point : ""
     cardsE.appendChild(card)
    })
 
