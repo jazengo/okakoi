@@ -92,6 +92,10 @@ function listenPlayers(){
   if(players.p1===playerId) playerNumber=1
   if(players.p2===playerId) playerNumber=2
 
+  if(playerNumber){
+ renderHand()
+}
+
 if(players.p1 && players.p2 && playerNumber===1){
   tryStartGame()
 }
@@ -435,7 +439,9 @@ card.innerText=c && c.point ? c.point : ""
 
 function renderHand(){
 
- if(!state || !playerNumber) return
+if(!state) return
+if(!playerNumber) return
+if(!state.hands) return
 
  handDiv.innerHTML=""
 
