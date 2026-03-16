@@ -352,19 +352,21 @@ if(!Array.isArray(districts)){
 
   cardsW.className="cardArea"
   cardsE.className="cardArea"
+ 
+ 
+  if(playerNumber===state.currentPlayer){
+ cardsW.style.cursor="pointer"
+ cardsE.style.cursor="pointer"
+}
 
   /* カード配置クリック */
 
  cardsW.onclick=()=>{
- if(playerNumber===1 && state.currentPlayer===1 && state.phase==="build"){
-  build(i)
- }
+ build(i)
 }
 
- cardsE.onclick=()=>{
- if(playerNumber===2 && state.currentPlayer===2 && state.phase==="build"){
-  build(i)
- }
+cardsE.onclick=()=>{
+ build(i)
 }
 
   /* -------------------------
@@ -502,11 +504,8 @@ function updateTurnDisplay(){
 function build(i){
 
  if(!state) return
- if(!Array.isArray(state.districts)){
-   state.districts = Object.values(state.districts || {})
- }
-
  if(playerNumber!==state.currentPlayer) return
+ if(state.phase!=="build") return
  if(selectedCard===null) return
 
  const newState=JSON.parse(JSON.stringify(state))
@@ -518,8 +517,6 @@ function build(i){
 
  const card=hand.splice(selectedCard,1)[0]
 
- if(!card) return
-
  if(!newState.districts[i]) return
 
  if(!newState.districts[i].p1) newState.districts[i].p1=[]
@@ -527,14 +524,13 @@ function build(i){
 
  newState.districts[i]["p"+playerNumber].push(card)
 
- newState.currentPlayer = playerNumber===1?2:1
+ newState.currentPlayer = playerNumber===1 ? 2 : 1
 
  if(newState.hands[0].length===0 && newState.hands[1].length===0){
- newState.phase="battle"
-}
+  newState.phase="battle"
+ }
 
  selectedCard=null
- renderHand()
 
  set(ref(db,"rooms/"+roomId+"/state"),newState)
 
