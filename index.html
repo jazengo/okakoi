@@ -523,16 +523,11 @@ const i = floodCard.district
     カード補充
  -------------------- */
 
- for(let p=0;p<2;p++){
-
-  if(newState.floodDeck.length > 0)
+if(newState.buildDeck.length > 0)
  newState.hands[p].push(drawBuild(newState.buildDeck))
 
-  if(newState.floodDeck.length > 0)
-   newState.hands[p].push(drawBuild(newState.buildDeck))
-
- }
-
+if(newState.buildDeck.length > 0)
+ newState.hands[p].push(drawBuild(newState.buildDeck))
 
  /* --------------------
     次フェーズ
