@@ -650,6 +650,8 @@ while(districts.length < DISTRICTS){
 
 
   const d = districts[i] || {p1:[],p2:[]}
+if(!Array.isArray(d.p1)) d.p1 = Object.values(d.p1 || {})
+if(!Array.isArray(d.p2)) d.p2 = Object.values(d.p2 || {})
 
   const w=document.createElement("div")
   const e=document.createElement("div")
@@ -724,7 +726,7 @@ while(districts.length < DISTRICTS){
      カード表示
   ------------------------- */
 
-(d.p1 || []).forEach(c=>{
+Object.values(d.p1 || {}).forEach(c=>{
 
  const div=document.createElement("div")
 
@@ -742,7 +744,7 @@ cardsW.appendChild(div)
 
 });
 
-(d.p2 || []).forEach(c=>{
+Object.values(d.p2 || {}).forEach(c=>{
 
  const div=document.createElement("div")
 
