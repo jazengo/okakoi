@@ -370,12 +370,12 @@ if(!Array.isArray(districts)){
 
   /* カード配置クリック */
 
-cardsW.addEventListener("click",()=>{
+w.addEventListener("click",()=>{
  console.log("west clicked",i)
  build(i)
 })
 
-cardsE.addEventListener("click",()=>{
+e.addEventListener("click",()=>{
  console.log("east clicked",i)
  build(i)
 })
@@ -394,10 +394,7 @@ card.innerText=c && c.point ? c.point : ""
 
   }else{
 
-const labelW = document.createElement("div")
-//labelW.innerText="ここにカードを置く"
-labelW.style.pointerEvents="none"
-cardsW.appendChild(labelW)
+
   }
 
   if(Array.isArray(d.p2) && d.p2.length>0){
@@ -410,10 +407,7 @@ card.innerText=c && c.point ? c.point : ""
    })
 
   }else{
-const labelE = document.createElement("div")
-//labelE.innerText="ここにカードを置く"
-labelE.style.pointerEvents="none"
-cardsE.appendChild(labelE)
+
 
   }
 
