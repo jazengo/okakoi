@@ -359,169 +359,167 @@ function score(cards){
 
 function runFloodPhase(){
 
-if(!newState.floodHistory){
-  newState.floodHistory = {p1:[],p2:[]}
-}
-
-if(!newState.floodHistory.p1){
-  newState.floodHistory.p1 = []
-}
-
-if(!newState.floodHistory.p2){
-  newState.floodHistory.p2 = []
-}
-
  if(!state) return
 
+ /* stateコピー */
  const newState = JSON.parse(JSON.stringify(state))
 
- if(!newState.floodedDistricts)
-  newState.floodedDistricts=[]
+ /* --- 安全初期化 --- */
 
- if(!newState.floodHistory)
-  newState.floodHistory={p1:[],p2:[]}
+ if(!newState.floodedDistricts){
+  newState.floodedDistricts = []
+ }
 
- /* 未洪水地区取得 */
+ if(!newState.floodHistory){
+  newState.floodHistory = {p1:[],p2:[]}
+ }
 
- const candidates=[]
+ if(!newState.floodHistory.p1){
+  newState.floodHistory.p1 = []
+ }
+
+ if(!newState.floodHistory.p2){
+  newState.floodHistory.p2 = []
+ }
+
+ if(!newState.logs){
+  newState.logs = []
+ }
+
+ /* --- 未洪水地区取得 --- */
+
+ const candidates = []
 
  for(let i=0;i<DISTRICTS;i++){
-
   if(!newState.floodedDistricts.includes(i)){
    candidates.push(i)
   }
-
  }
 
- if(candidates.length===0){
+ if(candidates.length === 0){
   addLog("洪水地区なし")
   return
  }
 
- /* ランダム地区 */
+ /* --- ランダム地区 --- */
 
- const i=candidates[Math.floor(Math.random()*candidates.length)]
+ const i = candidates[Math.floor(Math.random()*candidates.length)]
 
- const d=newState.districts[i]
+ const d = newState.districts[i] || {p1:[],p2:[]}
 
- const westScore=score(d.p1)
- const eastScore=score(d.p2)
+ const westScore = score(d.p1)
+ const eastScore = score(d.p2)
 
- let floodSide=null
- let result=""
- let washed=0
+ let floodSide = null
+ let result = ""
+ let washed = 0
 
- /* 洪水判定 */
+ /* --- 洪水判定 --- */
 
- if(westScore>eastScore){
+ if(westScore > eastScore){
 
-  floodSide="p2"
-  result="東岸洪水"
+  floodSide = "p2"
+  result = "東岸洪水"
 
- }else if(eastScore>westScore){
+ }else if(eastScore > westScore){
 
-  floodSide="p1"
-  result="西岸洪水"
+  floodSide = "p1"
+  result = "西岸洪水"
 
  }else{
 
-  result="洪水なし"
+  result = "洪水なし"
 
  }
 
- /* 集落流失 */
+ /* --- 集落流失 --- */
 
  if(floodSide){
 
-  const cards=d[floodSide]
-
-  const remain=[]
+  const cards = d[floodSide] || []
+  const remain = []
 
   cards.forEach(c=>{
-
-   if(c.name==="集落"){
+   if(c.name === "集落"){
     washed++
    }else{
     remain.push(c)
    }
-
   })
 
-  d[floodSide]=remain
+  d[floodSide] = remain
 
  }
 
- /* 履歴 */
+ /* --- ログ --- */
 
-const logText =
- "地区"+(i+1)+
- " / "+result+
- " / 流された集落:"+washed
+ const logText =
+  "地区"+(i+1)+
+  " / "+result+
+  " / 流された集落:"+washed
 
-addLog(logText)
+ addLog(logText)
 
-/* 履歴保存 */
-if(!newState.logs) newState.logs=[]
-newState.logs.unshift(logText)
- /* 洪水地区登録 */
+ newState.logs.unshift(logText)
+
+ /* --- 洪水地区登録 --- */
 
  newState.floodedDistricts.push(i)
 
- /* 洪水履歴更新 */
+ /* --- 洪水履歴更新 --- */
 
  if(floodSide){
 
- if(!newState.floodHistory[floodSide]){
-  newState.floodHistory[floodSide] = []
+  if(!newState.floodHistory[floodSide]){
+   newState.floodHistory[floodSide] = []
+  }
+
+  newState.floodHistory[floodSide].push(i)
+
  }
 
- newState.floodHistory[floodSide].push(i)
+ /* --- 大洪水判定 --- */
 
-}
- /* --------------------
-    大洪水判定
- -------------------- */
+ const history = floodSide ? newState.floodHistory[floodSide] : []
 
-const history = floodSide ? (newState.floodHistory[floodSide] || []) : []
+ if(history.length >= 3){
 
- if(history.length>=3){
-
-  const last3=history.slice(-3).sort((a,b)=>a-b)
+  const last3 = history.slice(-3).sort((a,b)=>a-b)
 
   if(
-   last3[1]===last3[0]+1 &&
-   last3[2]===last3[1]+1
+   last3[1] === last3[0] + 1 &&
+   last3[2] === last3[1] + 1
   ){
 
    addLog("大洪水発生")
 
-   const winner = floodSide==="p1" ? "p2":"p1"
+   const winner = floodSide === "p1" ? "p2" : "p1"
 
    endGame(winner)
-
    return
-
   }
 
  }
 
- /* --------------------
-    洪水処理に入れた予算獲得フェーズ
- -------------------- */
+ /* --- 次ラウンド用カード補充 --- */
 
  for(let p=0;p<2;p++){
 
-  newState.hands[p].push(drawFlood(newState.floodDeck))
-  newState.hands[p].push(drawFlood(newState.floodDeck))
+  if(newState.floodDeck.length > 0)
+   newState.hands[p].push(drawFlood(newState.floodDeck))
+
+  if(newState.floodDeck.length > 0)
+   newState.hands[p].push(drawFlood(newState.floodDeck))
 
  }
 
- newState.phase="build"
+ /* --- フェーズ戻す --- */
+
+ newState.phase = "build"
 
  set(ref(db,"rooms/"+roomId+"/state"),newState)
 
 }
-
 /* -----------------------------
  ボード描画
 ----------------------------- */
