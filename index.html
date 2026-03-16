@@ -370,12 +370,12 @@ if(!Array.isArray(districts)){
 
   /* カード配置クリック */
 
-cardsW.addEventListener("click",()=>{
+w.addEventListener("click",()=>{
  console.log("west clicked",i)
  build(i)
 })
 
-cardsE.addEventListener("click",()=>{
+e.addEventListener("click",()=>{
  console.log("east clicked",i)
  build(i)
 })
@@ -442,6 +442,7 @@ card.innerText=c && c.point ? c.point : ""
  }
 
  updateTurnDisplay()
+ console.log("drawBoard called")
 
 }
 
