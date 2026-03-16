@@ -202,9 +202,9 @@ function drawEmptyBoard(){
 
   areaW.className="cardArea"
   areaE.className="cardArea"
-
-  areaW.innerText="カードを置く"
-  areaE.innerText="カードを置く"
+//削除
+  //areaW.innerText="カードを置く"
+  //areaE.innerText="カードを置く"
 
   w.appendChild(titleW)
   w.appendChild(areaW)
@@ -370,11 +370,13 @@ if(!Array.isArray(districts)){
 
   /* カード配置クリック */
 
-w.addEventListener("click",()=>{
+cardsW.addEventListener("click",()=>{
+ console.log("west clicked",i)
  build(i)
 })
 
-e.addEventListener("click",()=>{
+cardsE.addEventListener("click",()=>{
+ console.log("east clicked",i)
  build(i)
 })
   /* -------------------------
@@ -393,7 +395,7 @@ card.innerText=c && c.point ? c.point : ""
   }else{
 
 const labelW = document.createElement("div")
-labelW.innerText="ここにカードを置く"
+//labelW.innerText="ここにカードを置く"
 labelW.style.pointerEvents="none"
 cardsW.appendChild(labelW)
   }
@@ -409,7 +411,7 @@ card.innerText=c && c.point ? c.point : ""
 
   }else{
 const labelE = document.createElement("div")
-labelE.innerText="ここにカードを置く"
+//labelE.innerText="ここにカードを置く"
 labelE.style.pointerEvents="none"
 cardsE.appendChild(labelE)
 
