@@ -162,12 +162,6 @@ function listenState(){
 
   state = s
 
-  // player番号が決まるまで待つ
-  if(!playerNumber){
-   console.log("playerNumber未決定")
-   return
-  }
-
   console.log("state received")
 
   drawBoard()
