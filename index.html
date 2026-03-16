@@ -120,15 +120,13 @@ async function tryStartGame(){
  const snap = await get(ref(db,"rooms/"+roomId+"/state"))
 
  if(snap.exists()) return
-
  if(playerNumber!==1) return
 
  const deck=createDeck()
 
  const newState={
 
-    phase:"build",   // ←追加
-
+  phase:"build",
   started:true,
   districts:createDistricts(),
   hands:createHands(deck),
@@ -137,6 +135,8 @@ async function tryStartGame(){
   round:1
 
  }
+
+ console.log("ゲーム開始", newState)
 
  set(ref(db,"rooms/"+roomId+"/state"),newState)
 
@@ -156,12 +156,8 @@ function listenState(){
 
   state=s
 
-  // districtsが無い場合は空ボード
-  if(!state.districts){
-    drawEmptyBoard()
-  }else{
-    drawBoard()
-  }
+
+drawBoard()
 
   // 手札は必ず描画
   renderHand()
