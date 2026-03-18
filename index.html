@@ -47,16 +47,40 @@ if(!roomId){
 
 let playerId = Math.random().toString(36).substring(2,10)
 let playerNumber = null
+let reliefUIShown = false
 
 let selectedCard = null
+let actionLock = false
+
 let state = null
+
+let reliefProcessing = false
 
 let playersEverJoined = false
 let westBank
 let eastBank
 let handDiv
-let turnDisplay
+
 let playerSideDisplay
+
+let lastBuildSide = null
+/* 手札の描画管理 */
+const CARD_IMAGES = {
+  "ハザードマップ": "images/cards/hazard.png",
+  "水門": "images/cards/gate.png",
+  "堤防": "images/cards/embankment.png",
+  "ダム": "images/cards/dam.png",
+  "集落": "images/cards/village.png"
+}
+/* 盤面の描画管理 */
+const CARD_STYLE = {
+  "ハザードマップ": { bg:"#8B4513", text:"1", color:"#fff" },
+  "水門":         { bg:"red",     text:"2", color:"#7CFC00" },
+  "堤防":         { bg:"green",   text:"3", color:"yellow" },
+  "ダム":         { bg:"black",   text:"4", color:"#fff" },
+  "集落":         { bg:"transparent", text:"★", color:"gold" }
+}
+
 
 /* -----------------------------
  DOM準備
@@ -67,7 +91,7 @@ document.addEventListener("DOMContentLoaded",()=>{
  westBank=document.getElementById("westBank")
  eastBank=document.getElementById("eastBank")
  handDiv=document.getElementById("hand")
- turnDisplay=document.getElementById("turnDisplay")
+
 playerSideDisplay=document.getElementById("playerSide")
  drawEmptyBoard()
 
@@ -177,9 +201,14 @@ const newState={
  floodHistory:{p1:[],p2:[]},
 
  currentPlayer:1,
- round:1
+ round:1,
+/* 岸をランダムに決定 */
+ sideOrder: Math.random()<0.5 ? ["p1","p2"] : ["p2","p1"],
+
+ currentSide: null
 
 }
+newState.currentSide = newState.sideOrder[0]
 
  console.log("ゲーム開始", newState)
  set(ref(db,"rooms/"+roomId+"/state"),newState).then(()=>{
@@ -193,45 +222,44 @@ const newState={
  state同期
 ----------------------------- */
 
-let lastPhase = null
+let lastPhase = null  // ★ フェーズ変化検知用（外に置く）
 
 function listenState(){
 
- const stateRef = ref(db,"rooms/"+roomId+"/state")
+  const stateRef = ref(db,"rooms/"+roomId+"/state")
 
- onValue(stateRef,(snap)=>{
+  onValue(stateRef,(snap)=>{
+    const s = snap.val()
+    if(!s) return
 
-  const s = snap.val()
+    state = s
 
-  if(!s) return
+    // ===== ① 描画 =====
+    renderHand()
+    updatePlayerSide()
+    renderLogs()
+    drawBoard()
 
-  state = s
+    // ===== ② 洪水フェーズ突入時 =====
+    if(s.phase === "flood" && lastPhase !== "flood"){
+      runFloodPhase()
+    }
 
- drawBoard()
-renderHand()
-renderLogs()
+    // ===== ③ 義援金フェーズ突入時 =====
+    if(s.phase === "relief" && lastPhase !== "relief"){
+      checkRelief()
+    }
 
-  /* フェーズ処理 */
+    // ===== ④ 義援金終了時 =====
+    if(state.phase !== "relief"){
+      document.querySelector(".reliefBox")?.remove()
+      document.querySelector(".reliefWait")?.remove()
+    }
 
-  if(s.phase === "flood" && playerNumber === 1){
+    // ===== ⑤ フェーズ記録 =====
+    lastPhase = s.phase
 
-   /* 二重実行防止 */
-
-   if(!window.floodRunning){
-
-    window.floodRunning = true
-
-    setTimeout(()=>{
-     runFloodPhase()
-     window.floodRunning = false
-    },50)
-
-   }
-
-  }
-
- })
-
+  })
 }
 /* -----------------------------
  地区生成
@@ -239,8 +267,7 @@ renderLogs()
 
 function drawEmptyBoard(){
 
- westBank.innerHTML=""
- eastBank.innerHTML=""
+westBank.innerHTML=""
 
  for(let i=0;i<DISTRICTS;i++){
 
@@ -272,7 +299,7 @@ function drawEmptyBoard(){
   e.appendChild(areaE)
 
   westBank.appendChild(w)
-  eastBank.appendChild(e)
+ 
  }
 }
 
@@ -334,16 +361,18 @@ function drawVillage(){
  return {name:"集落",point:0}
 }
 
+
+
 function createHands(buildDeck){
 
  const hands=[[],[]]
 
  for(let p=0;p<2;p++){
-
-  for(let i=0;i<2;i++)
+ // 初期建設手札補充
+  for(let i=0;i<3;i++)
 hands[p].push(drawBuild(buildDeck))
-
-  for(let i=0;i<1;i++)
+// 初期集落手札補充
+  for(let i=0;i<3;i++)
    hands[p].push(drawVillage())
 
  }
@@ -378,13 +407,29 @@ function runFloodPhase(){
 
  console.log("洪水フェーズ処理開始")
 
+
+
  const newState = JSON.parse(JSON.stringify(state))
 
+
+
+
+
+
+
+
+ if(!newState.floodLoseHistory){
+  newState.floodLoseHistory = {p1:[], p2:[]}
+}
 /* 配列安全化 */
 
 let districts = newState.districts || {}
 if(!Array.isArray(districts)){
- districts = Object.values(districts)
+ const arr = []
+ Object.keys(districts).forEach(k=>{
+  arr[Number(k)] = districts[k]
+ })
+ districts = arr
 }
 newState.districts = districts
 
@@ -418,6 +463,21 @@ newState.floodDeck = floodDeck
 
  if(!newState.logs)
   newState.logs = []
+
+// =========================
+// floodLoseHistory安全化
+// =========================
+if(!newState.floodLoseHistory){
+  newState.floodLoseHistory = {p1:[], p2:[]}
+}
+
+if(!Array.isArray(newState.floodLoseHistory.p1)){
+  newState.floodLoseHistory.p1 = Object.values(newState.floodLoseHistory.p1 || {})
+}
+
+if(!Array.isArray(newState.floodLoseHistory.p2)){
+  newState.floodLoseHistory.p2 = Object.values(newState.floodLoseHistory.p2 || {})
+}
 
 
  /* --------------------
@@ -473,24 +533,95 @@ newState.districts[i].revealed = true
     スコア
  -------------------- */
 
- const westScore = score(d.p1 || [])
- const eastScore = score(d.p2 || [])
+const westScore = score(d.p1 || [])
+const eastScore = score(d.p2 || [])
+
+let floodSide = null
+let washed = 0
+let result = "では氾濫は起きませんでした"
+
+if(westScore > eastScore){
+ floodSide = "p2"
+ result = "東岸で洪水が起きました"
+}
+else if(eastScore > westScore){
+ floodSide = "p1"
+ result = "西岸で洪水が起きました"
+}
 
 
- let floodSide = null
- let washed = 0
- let result = "洪水なし"
+/* // =========================
+// ★ 大洪水テスト（こっちが本命）
+// =========================
+newState.floodLoseHistory = {
+  p1: [1,2,3],
+  p2: []
+}
+if(hasThreeConsecutive(newState.floodLoseHistory.p1)){
+  newState.bigFlood = true
+  newState.bigFloodLoser = "p1"
+}
+// =========================ここまで
+ */
 
- if(westScore > eastScore){
-  floodSide = "p2"
-  result = "東岸洪水"
- }
- else if(eastScore > westScore){
-  floodSide = "p1"
-  result = "西岸洪水"
- }
+
+//洪水判定を記録
+if(floodSide){
+  d.floodedSide = floodSide
+
+  // =========================
+  // 負けた地区を記録
+  // =========================
+  newState.floodLoseHistory[floodSide].push(i)
 
 
+ 
+
+
+console.log("履歴p1", newState.floodLoseHistory.p1)
+console.log("履歴p2", newState.floodLoseHistory.p2)
+
+console.log("連続判定p1", hasThreeConsecutive(newState.floodLoseHistory.p1))
+console.log("連続判定p2", hasThreeConsecutive(newState.floodLoseHistory.p2))
+
+
+  // =========================
+  // 大洪水判定
+  // =========================
+  let p1History = newState.floodLoseHistory.p1 || []
+let p2History = newState.floodLoseHistory.p2 || []
+
+const p1Seq = hasThreeConsecutive(p1History)
+const p2Seq = hasThreeConsecutive(p2History)
+
+if(!Array.isArray(p1History)){
+  p1History = Object.values(p1History)
+}
+if(!Array.isArray(p2History)){
+  p2History = Object.values(p2History)
+}
+
+
+if(p1Seq){
+  newState.bigFlood = true
+  newState.bigFloodLoser = "p1"
+  newState.bigFloodDistricts = p1Seq
+}
+
+if(p2Seq){
+  newState.bigFlood = true
+  newState.bigFloodLoser = "p2"
+  newState.bigFloodDistricts = p2Seq
+}
+}
+/* 義援金対象（洪水で負けた側） */
+if(floodSide){
+  newState.relief = floodSide
+  newState.reliefPlayer = floodSide
+  newState.reliefDone = false
+}else{
+  newState.relief = null   // ←これを追加
+}
  /* --------------------
     集落流失
  -------------------- */
@@ -499,18 +630,21 @@ newState.districts[i].revealed = true
 
   const cards = d[floodSide] || []
 
-  const remain = []
+const remain = []
 
-  cards.forEach(c=>{
+cards.forEach(c=>{
 
-   if(c?.name === "集落"){
-    washed++
-   }else{
-    remain.push(c)
-   }
+ if(c?.name === "集落"){
+  washed++
 
-  })
+  // ⭐ここが重要
+  c.flooded = true
+ }
 
+ // 全部残す
+ remain.push(c)
+
+})
   d[floodSide] = remain
 
  }
@@ -521,7 +655,7 @@ newState.districts[i].revealed = true
  -------------------- */
 
  newState.logs.unshift(
-  "地区"+(i+1)+" "+result+" 流失:"+washed
+  "豪雨が来ました。地区"+(i+1)+" "+result+" 流失:"+washed
  )
 
 
@@ -532,7 +666,10 @@ newState.districts[i].revealed = true
    洪水7回でゲーム終了
 -------------------- */
 
-if(newState.floodedDistricts.length >= 7){
+if(
+  newState.floodedDistricts.length >= 7 ||
+  newState.bigFlood
+){
 
  let p1Settlements = 0
  let p2Settlements = 0
@@ -541,33 +678,75 @@ if(newState.floodedDistricts.length >= 7){
 
   const d = newState.districts[i] || {p1:[],p2:[]}
 
-  p1Settlements += (d.p1 || []).filter(c=>c?.name==="集落").length
-  p2Settlements += (d.p2 || []).filter(c=>c?.name==="集落").length
+p1Settlements += (d.p1 || []).filter(c=>c?.name==="集落" && !c.flooded).length
+p2Settlements += (d.p2 || []).filter(c=>c?.name==="集落" && !c.flooded).length
 
  }
 
  let result
 
- if(p1Settlements > p2Settlements)
-  result = "西岸プレイヤー勝利"
- else if(p2Settlements > p1Settlements)
-  result = "東岸プレイヤー勝利"
- else
-  result = "引き分け"
+ // =========================
+ // ★ 大洪水なら即敗北
+ // =========================
+if(newState.bigFlood){
 
- newState.logs.unshift(
-  "最終結果 西岸集落数:"+p1Settlements+
-  " 東岸集落数:"+p2Settlements+
-  " → "+result
- )
+const d = newState.bigFloodDistricts || []
 
+const areaText = d.length
+  ? d.map(x => x+1).join("・")
+  : "不明"
+
+  if(newState.bigFloodLoser === "p1"){
+    result = "西岸で大洪水（地区"+areaText+"）が起きました。西岸の敗北です"
+  }else{
+    result = "東岸で大洪水（地区"+areaText+"）が起きました。東岸の敗北です"
+  }
+
+  newState.logs.unshift(result)
+
+}else{
+
+  // =========================
+  // 通常終了（集落数勝負）
+  // =========================
+
+  let p1Settlements = 0
+  let p2Settlements = 0
+
+  for(let i=0;i<DISTRICTS;i++){
+
+    const d = newState.districts[i] || {p1:[],p2:[]}
+
+p1Settlements += (d.p1 || []).filter(c=>c?.name==="集落" && !c.flooded).length
+p2Settlements += (d.p2 || []).filter(c=>c?.name==="集落" && !c.flooded).length
+  }
+
+  if(p1Settlements > p2Settlements)
+    result = "西岸プレイヤー勝利"
+  else if(p2Settlements > p1Settlements)
+    result = "東岸プレイヤー勝利"
+  else
+    result = "引き分け"
+
+  newState.logs.unshift(
+    "最終結果 西岸集落数:"+p1Settlements+
+    " 東岸集落数:"+p2Settlements+
+    " → "+result
+  )
+ }
+
+ // =========================
+ // 共通処理
+ // =========================
+
+ newState.result = result
  newState.phase = "gameover"
 
  set(ref(db,"rooms/"+roomId+"/state"),newState)
 
  console.log("ゲーム終了")
 
- return
+ return   // ←これを追加
 }
 
 /* --------------------
@@ -576,97 +755,169 @@ if(newState.floodedDistricts.length >= 7){
 
 for(let player=0; player<2; player++){
 
- if(!newState.hands[player])
-  newState.hands[player] = []
+  if(!newState.hands[player])
+    newState.hands[player] = []
 
- /* 建設カード2枚 */
-
- for(let i=0;i<2;i++){
-
-  if(newState.buildDeck && newState.buildDeck.length > 0){
-   newState.hands[player].push(drawBuild(newState.buildDeck))
+  /* 通常手札補充建設カード3枚 */
+  for(let i=0;i<3;i++){
+    if(newState.buildDeck && newState.buildDeck.length > 0){
+      newState.hands[player].push(drawBuild(newState.buildDeck))
+    }
   }
 
- }
-
- /* 集落カード1枚 */
-
- newState.hands[player].push(drawVillage())
+  /* 通常手札補充集落カード3枚 */
+  for(let i=0;i<3;i++){
+    newState.hands[player].push(drawVillage())
+  }
 
 }
+
+
  /* --------------------
     次フェーズ
  -------------------- */
 
- newState.phase = "build"
+if(newState.relief && !newState.reliefDone){
+  newState.phase = "relief"
+}else{
+   if(newState.reliefPlayer){
+  const reliefIndex = state.sideOrder.indexOf(newState.reliefPlayer)
+newState.currentPlayer = reliefIndex + 1
+  }else{
+    newState.currentPlayer = newState.lastPlayer || 1
+  }
 
- set(ref(db,"rooms/"+roomId+"/state"),newState)
-
+  newState.phase = "build"
 }
+
+set(ref(db,"rooms/"+roomId+"/state"),newState)
+}
+
+
+/* 大洪水判定 */
+function hasThreeConsecutive(arr){
+
+  console.log("大洪水チェック")
+
+  // null / undefined 対策
+  if(!arr) return false
+
+  // 配列じゃなければ配列化
+  if(!Array.isArray(arr)){
+    arr = Object.values(arr)
+  }
+
+  // ★ 数字だけにする（超重要）
+  arr = arr.filter(v => typeof v === "number")
+
+  // 要素が足りない場合
+  if(arr.length < 3) return false
+
+  // ソート
+  const sorted = [...arr].sort((a,b)=>a-b)
+
+  for(let j=0;j<sorted.length-2;j++){
+    if(
+      sorted[j]+1 === sorted[j+1] &&
+      sorted[j]+2 === sorted[j+2]
+    ){
+      return [sorted[j], sorted[j+1], sorted[j+2]]
+    }
+  }
+
+  return false
+}
+
 /* -----------------------------
  ボード描画
 ----------------------------- */
 
 function drawBoard(){
-   if(state.phase === "gameover"){
- turnDisplay.textContent = "ゲーム終了"
- return
-}
 
+  const isGameOver = state.phase === "gameover" 
 
 
  if(!state) return
- const playerIndex = playerNumber - 1
- /* -------------------------
-    districts取得
- ------------------------- */
-let districts = state.districts || []
 
-while(districts.length < DISTRICTS){
- districts.push({p1:[],p2:[]})
-}
+ const mySide = state.sideOrder[playerNumber-1]
 
- if(!districts){
-  console.log("districts missing → 再生成")
-  districts = createDistricts()
+ let districts = state.districts || []
+
+ while(districts.length < DISTRICTS){
+  districts.push({p1:[],p2:[]})
  }
 
- // Firebase配列対策
  if(!Array.isArray(districts)){
-  districts = Object.values(districts)
+  const arr=[]
+  Object.keys(districts).forEach(k=>{
+   arr[Number(k)] = districts[k]
+  })
+  districts = arr
  }
 
  state.districts = districts
+if(state.bigFlood){
+  console.log("大洪水表示")
 
- /* -------------------------
-    ボード初期化
- ------------------------- */
+  // 全地区のカードを強制公開
+  for(let i=0;i<DISTRICTS;i++){
+    if(state.districts[i]){
+      state.districts[i].revealed = true
+    }
+  }
+}
+
 
  westBank.innerHTML=""
- eastBank.innerHTML=""
 
  for(let i=0;i<DISTRICTS;i++){
 
-
-
   const d = districts[i] || {p1:[],p2:[]}
-if(!Array.isArray(d.p1)) d.p1 = Object.values(d.p1 || {})
-if(!Array.isArray(d.p2)) d.p2 = Object.values(d.p2 || {})
+
+  if(!Array.isArray(d.p1)) d.p1 = Object.values(d.p1 || {})
+  if(!Array.isArray(d.p2)) d.p2 = Object.values(d.p2 || {})
+
+  const district=document.createElement("div")
+  district.className="districtRow"
 
   const w=document.createElement("div")
+  const river=document.createElement("div")
   const e=document.createElement("div")
 
-     if(state.lastBuild === i){
- w.style.background="#fff3a0"
- e.style.background="#fff3a0"
-}
-
   w.className="district"
+  river.className="river"
   e.className="district"
 
-  /* -------------------------
-     タイトル
-  ------------------------- */
+  river.innerText="川"
+
+  /* 洪水表示 */
+
+  if(state.floodedDistricts && state.floodedDistricts.includes(i)){
+   w.style.background="#b9e3ff"
+   e.style.background="#b9e3ff"
+  }
+
+  if(d.floodedSide==="p1"){
+   w.style.background="#ffb3b3"
+  }
+
+  if(d.floodedSide==="p2"){
+   e.style.background="#ffb3b3"
+  }
+
+  if(state.lastBuild === i){
+
+   if(state.lastBuildSide === "p1"){
+    w.style.background="#fff3a0"
+   }
+
+   if(state.lastBuildSide === "p2"){
+    e.style.background="#fff3a0"
+   }
+
+  }
+
+  /* タイトル */
 
   const titleW=document.createElement("div")
   const titleE=document.createElement("div")
@@ -674,12 +925,22 @@ if(!Array.isArray(d.p2)) d.p2 = Object.values(d.p2 || {})
   titleW.className="title"
   titleE.className="title"
 
-  titleW.innerText="地区"+(i+1)
-  titleE.innerText="地区"+(i+1)
+  let westScore = score(d.p1)
+  let eastScore = score(d.p2)
 
-  /* -------------------------
-     カードエリア
-  ------------------------- */
+ if(mySide==="p1" || isGameOver){
+  titleW.innerText="地区"+(i+1)+" 西岸:"+westScore
+}else{
+  titleW.innerText="地区"+(i+1)+" 西岸:"+(d.revealed ? westScore : "？")
+}
+
+  if(mySide==="p2" || isGameOver){
+  titleE.innerText="地区"+(i+1)+" 東岸:"+eastScore
+}else{
+  titleE.innerText="地区"+(i+1)+" 東岸:"+(d.revealed ? eastScore : "？")
+}
+
+  /* カードエリア */
 
   const cardsW=document.createElement("div")
   const cardsE=document.createElement("div")
@@ -692,18 +953,13 @@ if(!Array.isArray(d.p2)) d.p2 = Object.values(d.p2 || {})
    cardsE.style.cursor="pointer"
   }
 
-  /* -------------------------
-     クリック
-  ------------------------- */
+  /* 建設クリック */
 
   cardsW.onclick=()=>{
 
-   console.log("west clicked",i)
-
-   if(playerNumber!==1){
-    console.log("西岸はp1のみ")
-    return
-   }
+   if(playerNumber!==state.currentPlayer) return
+   if(mySide!=="p1") return
+   if(selectedCard===null) return
 
    build(i)
 
@@ -711,89 +967,148 @@ if(!Array.isArray(d.p2)) d.p2 = Object.values(d.p2 || {})
 
   cardsE.onclick=()=>{
 
-   console.log("east clicked",i)
-
-   if(playerNumber!==2){
-    console.log("東岸はp2のみ")
-    return
-   }
+   if(playerNumber!==state.currentPlayer) return
+   if(mySide!=="p2") return
+   if(selectedCard===null) return
 
    build(i)
 
   }
 
-  /* -------------------------
-     カード表示
-  ------------------------- */
+  /* 西岸カード */
 
-Object.values(d.p1 || {}).forEach(c=>{
+  d.p1.forEach(c=>{
+    const style = CARD_STYLE[c.name] 
 
- const div=document.createElement("div")
+   const div=document.createElement("div")
 
- if(playerIndex===0){
-   div.textContent=c.name
+ if(mySide==="p1" || d.revealed || isGameOver){
+
+  if(style){
+
+   if(c.name === "集落"){
+
+  // ⭐ 流出してるか判定
+  if(c.flooded){
+    div.innerHTML = `<span style="color:black; font-size:20px;">★</span>`
+  }else{
+    div.innerHTML = `<span style="color:${style.color}; font-size:20px;">${style.text}</span>`
   }
-  else if(d.revealed){
-   div.textContent=c.name
- }
- else{
-   div.textContent="？"
- }
 
-cardsW.appendChild(div)
+}else{
+  div.innerHTML = `
+    <div class="districtSymbol"
+      style="
+        background:${style.bg};
+        color:${style.color};
+      ">
+      ${style.text}
+    </div>
+  `
+}
 
-});
+  }else{
+    div.textContent = c.name
+  }
 
-Object.values(d.p2 || {}).forEach(c=>{
+}else{
+  div.textContent = "？"
+}
+   cardsW.appendChild(div)
 
- const div=document.createElement("div")
+  })
 
- if(playerIndex===1){
-   div.textContent=c.name
- }
- else if(d.revealed){
-   div.textContent=c.name
- }
- else{
-   div.textContent="？"
- }
+  /* 東岸カード */
 
- cardsE.appendChild(div)
+  d.p2.forEach(c=>{
+     const style = CARD_STYLE[c.name] 
 
-})
-  /* -------------------------
-     スコア
-  ------------------------- */
+   const div=document.createElement("div")
 
-  const scoreW=document.createElement("div")
-  const scoreE=document.createElement("div")
+if(mySide==="p2" || d.revealed || isGameOver){
 
-  scoreW.className="score"
-  scoreE.className="score"
+  if(style){
 
-  scoreW.innerText="西岸:"+score(d.p1)
-  scoreE.innerText="東岸:"+score(d.p2)
+   if(c.name === "集落"){
 
-  /* -------------------------
-     組み立て
-  ------------------------- */
+  // ⭐ 流出してるか判定
+  if(c.flooded){
+    div.innerHTML = `<span style="color:black; font-size:20px;">★</span>`
+  }else{
+    div.innerHTML = `<span style="color:${style.color}; font-size:20px;">${style.text}</span>`
+  }
+
+}else{
+  div.innerHTML = `
+    <div class="districtSymbol"
+      style="
+        background:${style.bg};
+        color:${style.color};
+      ">
+      ${style.text}
+    </div>
+  `
+}
+
+  }else{
+    div.textContent = c.name
+  }
+
+}else{
+  div.textContent = "？"
+}
+
+   cardsE.appendChild(div)
+
+  })
+
+  /* 組み立て */
 
   w.appendChild(titleW)
   w.appendChild(cardsW)
-  w.appendChild(scoreW)
 
   e.appendChild(titleE)
   e.appendChild(cardsE)
-  e.appendChild(scoreE)
 
-  westBank.appendChild(w)
-  eastBank.appendChild(e)
+  district.appendChild(w)
+  district.appendChild(river)
+  district.appendChild(e)
+
+  westBank.appendChild(district)
 
  }
 
  updateTurnDisplay()
 
  console.log("drawBoard called")
+
+ 
+if(state.phase === "relief" && !state.reliefDone){
+
+  const isTarget = state.reliefPlayer === ("p" + playerNumber)
+
+  // 対象プレイヤー
+  if(isTarget && !reliefUIShown){
+    console.log("義援金対象 → UI表示")
+    showReliefChoice()
+    reliefUIShown = true
+  }
+
+  // 非対象プレイヤー
+  if(!isTarget && !reliefUIShown){
+    console.log("待機画面表示")
+    showWaitingMessage()
+    reliefUIShown = true
+  }
+
+}else{
+  // フェーズ終了でリセット
+  reliefUIShown = false
+
+  document.querySelector(".reliefBox")?.remove()
+  document.querySelector(".reliefOverlay")?.remove()
+  document.querySelector(".waitingBox")?.remove()
+}
 
 }
 /* -----------------------------
@@ -834,13 +1149,17 @@ if(selectedCard !== null && selectedCard >= hand.length){
   if(i===selectedCard)
    d.classList.add("selected")
 
-  d.innerHTML=c.name+"<br>"+c.point
+   const imgSrc = CARD_IMAGES[c.name]
+
+  if(imgSrc){
+    d.innerHTML = `<img src="${imgSrc}" class="cardImg">`
+  }else{
+    d.innerHTML = c.name + "<br>" + c.point
+  }
 
   d.onclick=()=>{
-
    selectedCard=i
    renderHand()
-
   }
 
   handDiv.appendChild(d)
@@ -853,30 +1172,40 @@ if(selectedCard !== null && selectedCard >= hand.length){
  ターン表示
 ----------------------------- */
 
-function updateTurnDisplay(){
 
- if(!state) return
-
- if(state.currentPlayer===1){
-  turnDisplay.innerText="西"
-  turnDisplay.className="turnWest"
- }else{
-  turnDisplay.innerText="東"
-  turnDisplay.className="turnEast"
- }
-
-}
 function updatePlayerSide(){
 
- if(!playerNumber) return
+ if(!playerNumber || !state) return
 
- if(playerNumber===1){
+ const side = state.sideOrder[playerNumber-1]
+
+ if(side==="p1"){
   playerSideDisplay.innerText="あなたは西岸プレイヤー"
  }else{
   playerSideDisplay.innerText="あなたは東岸プレイヤー"
  }
 
 }
+
+function updateTurnDisplay(){
+
+ if(!state || !playerNumber) return
+
+ const turnDisplay = document.getElementById("turnDisplay")
+
+ if(state.phase === "gameover"){
+  turnDisplay.innerText = "ゲーム終了"
+  return
+ }
+
+ if(playerNumber === state.currentPlayer){
+  turnDisplay.innerText = "あなたの建設ターンです"
+ }else{
+  turnDisplay.innerText = "相手のターンです"
+ }
+
+}
+
 /* -----------------------------
  ログ表示
 ----------------------------- */
@@ -934,8 +1263,19 @@ function endGame(winner){
  カード配置
 ----------------------------- */
 function build(i){
+if(actionLock){
+ console.log("処理中")
+ return
+}
+
 
  console.log("build start")
+
+if(state.floodedDistricts && state.floodedDistricts.includes(i)){
+ console.log("洪水判定済み地区には建設できない")
+ return
+}
+
 
  if(!state){
   console.log("stateなし")
@@ -958,15 +1298,22 @@ function build(i){
  }
 
  /* stateコピー */
+ actionLock = true
  const newState = JSON.parse(JSON.stringify(state))
+
+
+ 
 
  /* districts安全化 */
  let districts = newState.districts || []
 
- if(!Array.isArray(districts)){
-  districts = Object.values(districts)
- }
-
+if(!Array.isArray(districts)){
+ const arr = []
+ Object.keys(districts).forEach(k=>{
+  arr[Number(k)] = districts[k]
+ })
+ districts = arr
+}
  while(districts.length < DISTRICTS){
   districts.push({p1:[],p2:[]})
  }
@@ -1014,14 +1361,15 @@ function build(i){
  if(!newState.districts[i].p2) newState.districts[i].p2=[]
 
  /* 配置 */
- const side = playerNumber===1 ? "p1" : "p2"
+const side = state.sideOrder[playerNumber-1]
 
  newState.districts[i][side].push(card)
 
  console.log("カード配置",card)
 
-  /* 配置したカードの強調 */
+/* 配置したカードの強調 */
 newState.lastBuild = i
+newState.lastBuildSide = side
  /* 手札チェック */
 let handsCheck = newState.hands
 
@@ -1037,23 +1385,240 @@ const hand2 = handsCheck[1] || []
 
  if(hand1.length===0 && hand2.length===0){
   console.log("洪水フェーズ開始")
+  // ★ 後攻プレイヤーを保存
+  newState.lastPlayer = state.currentPlayer
+
   newState.phase="flood"
  }
 
  /* ターン交代 */
- newState.currentPlayer = playerNumber===1 ? 2 : 1
+// ★ 次プレイヤー決定
+const myIndex = playerNumber - 1
+const enemyIndex = myIndex === 0 ? 1 : 0
 
- selectedCard = null
+const myHand = newState.hands[myIndex] || []
+const enemyHand = newState.hands[enemyIndex] || []
+
+// 両方0 → フェーズ終了
+if(myHand.length === 0 && enemyHand.length === 0){
+  newState.phase = "flood"
+}
+// 相手が0 → 自分続行
+else if(enemyHand.length === 0){
+  newState.currentPlayer = playerNumber
+}
+// 自分が0 → 相手続行
+else if(myHand.length === 0){
+  newState.currentPlayer = enemyIndex + 1
+}
+// 両方ある → 交代
+else{
+  newState.currentPlayer = enemyIndex + 1
+}
+
+selectedCard = null
 
  /* Firebase保存 */
- set(ref(db,"rooms/"+roomId+"/state"),newState)
-
+set(ref(db,"rooms/"+roomId+"/state"),newState).then(()=>{
+ actionLock = false
+})
 }
+
+/* =========================
+   義援金システム
+========================= */
+
+function checkRelief(){
+
+ if(!state.relief || state.reliefDone) return   // ←これ追加
+
+  const mySide = state.sideOrder[playerNumber-1]
+
+  // 自分じゃない → 待機表示
+  if(state.relief !== mySide){
+    showWaitingMessage()
+    return
+  }
+
+  // 自分 → 選択UI
+  showReliefChoice()
+}
+
+function showReliefChoice(){
+const mySide = state.sideOrder[playerNumber-1]
+
+if(state.reliefPlayer !== mySide){
+  return
+}
+  if(document.querySelector(".reliefBox")) return
+  console.log("義援金UI呼ばれた")
+
+  document.querySelector(".reliefBox")?.remove()
+  document.querySelector(".reliefOverlay")?.remove()
+
+  const overlay = document.createElement("div")
+overlay.className = "reliefOverlay"
+
+  overlay.style.position = "fixed"
+  overlay.style.top = "0"
+  overlay.style.left = "0"
+  overlay.style.width = "100%"
+  overlay.style.height = "100%"
+  overlay.style.background = "rgba(0,0,0,0.6)"
+  overlay.style.zIndex = "9998"
+
+  const box = document.createElement("div")
+  box.className = "reliefBox"    
+
+  // ★完全に強制表示
+  box.style.position = "fixed"
+  box.style.top = "50%"
+  box.style.left = "50%"
+  box.style.transform = "translate(-50%, -50%)"
+  box.style.background = "white"
+  box.style.padding = "20px"
+  box.style.borderRadius = "10px"
+  box.style.zIndex = "9999"
+  box.style.width = "300px"
+
+  box.innerHTML = `
+    <h3>義援金を受け取ります</h3>
+    <p>カードを1枚選んでください</p>
+    <button id="reliefFlood">治水カード</button>
+    <button id="reliefVillage">集落カード</button>
+  `
+
+  document.body.appendChild(overlay)
+  document.body.appendChild(box)
+
+  document.getElementById("reliefFlood").onclick = ()=>{}
+  document.getElementById("reliefVillage").onclick = ()=>{}
+  // =========================
+  // 治水カード
+  // =========================
+  document.getElementById("reliefFlood").onclick = async ()=>{
+
+      if(reliefProcessing) return
+  reliefProcessing = true
+
+    const snap = await get(ref(db,"rooms/"+roomId+"/state"))
+    const newState = snap.val()
+   if(!newState.relief || newState.reliefDone){
+  console.log("すでに義援金処理済み")
+  return
+}
+
+    newState.hands[playerNumber-1] ??= []
+
+    if(!newState.buildDeck || newState.buildDeck.length === 0){
+      newState.logs.unshift("建設カードデッキが尽きた")
+    }else{
+      const card = newState.buildDeck.pop()
+      newState.hands[playerNumber-1].push(card)
+      newState.logs.unshift("義援金：" + card.name + "を獲得")
+    }
+
+    newState.relief = null
+    newState.reliefDone = true   // ←追加
+ // =========================
+  // 次のスタートプレイヤー決定
+  // =========================
+  if(newState.reliefDone){
+    const reliefIndex = state.sideOrder.indexOf(newState.reliefPlayer)
+newState.currentPlayer = reliefIndex + 1
+  }else{
+    newState.currentPlayer = newState.lastPlayer || 1
+  }
+
+    newState.phase = "build"
+
+    await set(ref(db,"rooms/"+roomId+"/state"),newState)
+
+    document.querySelector(".reliefBox")?.remove()
+    document.querySelector(".reliefOverlay")?.remove()
+      reliefProcessing = false  // ←ここ！！
+  }
+
+  // =========================
+  // 集落カード
+  // =========================
+  document.getElementById("reliefVillage").onclick = async ()=>{
+
+    if(reliefProcessing) return
+reliefProcessing = true
+
+    const snap = await get(ref(db,"rooms/"+roomId+"/state"))
+    const newState = snap.val()
+ if(!newState.relief || newState.reliefDone){
+  console.log("すでに義援金処理済み")
+  return
+}
+    newState.hands[playerNumber-1] ??= []
+    newState.hands[playerNumber-1].push({name:"集落", point:0})
+
+    newState.logs.unshift("義援金：集落カードを獲得")
+    newState.relief = null
+    newState.reliefDone = true  
+ // =========================
+  // 次のスタートプレイヤー決定
+  // =========================
+  if(newState.reliefDone){
+   const reliefIndex = state.sideOrder.indexOf(newState.reliefPlayer)
+newState.currentPlayer = reliefIndex + 1
+  }else{
+    newState.currentPlayer = newState.lastPlayer || 1
+  }
+
+    newState.phase = "build"
+
+    await set(ref(db,"rooms/"+roomId+"/state"),newState)
+
+    document.querySelector(".reliefBox")?.remove()
+    document.querySelector(".reliefOverlay")?.remove()
+      reliefProcessing = false  // ←ここ！！
+  }
+}
+function showWaitingMessage(){
+
+   if(state.reliefPlayer === ("p" + playerNumber)){
+    return
+  }
+  if(document.querySelector(".reliefWait")) return
+
+  const div = document.createElement("div")
+  div.className = "reliefWait"
+  div.innerText = "相手が義援金を選択中です..."
+
+  document.body.appendChild(div)
+}
+
 </script>
 
 
 
 <style>
+.districtRow{
+display:grid;
+grid-template-columns:1fr 60px 1fr;
+gap:6px;
+margin-bottom:8px;
+}
+
+.west,.east{
+border:1px solid black;
+padding:6px;
+background:#f8f8f8;
+}
+
+.river{
+display:flex;
+align-items:center;
+justify-content:center;
+background:#b9e3ff;
+font-weight:bold;
+}
+
+
   .villageHighlight{
 outline:4px solid gold;
 background:#fff7cc;
@@ -1070,19 +1635,19 @@ text-align:center;
 
 #container{
 display:grid;
-grid-template-columns:1fr 140px 1fr 260px;
+grid-template-columns:1fr 260px;
 gap:6px;
 padding:6px;
-
-height:600px;
+height:calc(100vh - 260px);
+overflow:hidden;
 }
 
-.bank{
+/* .bank{
 display:flex;
 flex-direction:column;
 gap:8px;
 overflow-y:auto;
-}
+} */
 
 .district{
 background:#eaffea;
@@ -1147,24 +1712,30 @@ border-radius:3px;
 outline:3px solid gold;
 transform:scale(1.15);
 }
-
+/*<!--中央の川CSS1
 #river{
 background:linear-gradient(90deg,#4fb0ff,#1e78d7);
 border-radius:40px;
 }
+-->*/
 
 .handCard{
-display:inline-block;
-background:white;
-border:3px solid #333;
-border-radius:12px;
-width:110px;
-height:140px;
-margin:6px;
-cursor:pointer;
-font-size:18px;
-font-weight:bold;
+  width:80px;       /* 好きなサイズでOK */
+  height:110px;
+  border:2px solid orange;
+  border-radius:10px;
+  overflow:hidden;  /* ←これ超重要（はみ出し防止） */
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#fff;
 }
+.cardImg{
+  width:100%;
+  height:100%;
+  object-fit:contain;  /* ←これがポイント */
+}
+
 
 .selected{
 outline:4px solid orange;
@@ -1201,15 +1772,6 @@ box-shadow:0 0 10px red;
 border:4px solid blue;
 box-shadow:0 0 10px blue;
 }
-#turnDisplay{
-position:absolute;
-top:50%;
-left:50%;
-transform:translate(-50%,-50%);
-font-size:40px;
-font-weight:bold;
-pointer-events:none;
-}
 
 .turnEast{
 color:#1e78d7;
@@ -1219,11 +1781,14 @@ color:#1e78d7;
 color:#d33;
 }
 
-#river{
+/*中央の川CSS2
+ #river{
 position:relative;
 background:linear-gradient(90deg,#4fb0ff,#1e78d7);
 border-radius:40px;
-}
+} */
+
+
 #victoryScreen{
 position:fixed;
 top:0;
@@ -1275,23 +1840,85 @@ gap:4px;
 cursor:pointer;
 }
 
+
+#board{
+width:100%;
+overflow-y:auto;
+padding-right:6px;
+padding-bottom:160px;
+}
+#hand{
+position:sticky;
+bottom:0;
+background:#222;
+z-index:20;
+padding:10px;
+border-top:4px solid #444;
+display:flex;
+justify-content:center;
+gap:8px;
+}
+
+.reliefBox {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+
+  z-index: 2000;   /* ★これが最重要 */
+}
+
+.reliefOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  z-index: 1000;
+}
+
+.districtSymbol{
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:bold;
+  font-size:16px;
+  border-radius:4px;
+}
+
+
+.turn-west{
+  color:red;
+}
+
+.turn-east{
+  color:blue;
+}
+
+
 </style>
 </head>
 
 <body>
 
-<h1>御囲堤ゲーム</h1>
+<h1>堤防建設ゲーム・オカコイ（仮）</h1>
 <h2 id="playerSide"></h2>
+
+<h2 id="turnDisplay"></h2><!-- ターン表示 -->
 
 <div id="container">
 
-<div class="bank" id="westBank"></div>
-
-<div id="river">
-  <div id="turnDisplay"></div>
+<div id="board">
+  <div id="westBank"></div>
 </div>
 
-<div class="bank" id="eastBank"></div>
 
 <div>
 
@@ -1315,7 +1942,7 @@ cursor:pointer;
 
 </div>
 
-<h3>手札</h3>
+<!-- <h3>手札</h3> -->
 <div id="hand"></div>
 
 
