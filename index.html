@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>御囲堤ゲーム</title>
+<title>堤防建設ゲーム・オカコイ（仮）</title>
 
 <script type="module">
 
@@ -312,7 +312,10 @@ function createDistricts(){
  const arr=[]
 
  for(let i=0;i<DISTRICTS;i++){
-  arr.push({p1:[],p2:[]})
+  arr.push({
+    p1:[drawVillage(true)],  // ← 初期だけ公開
+    p2:[drawVillage(true)]
+  })
  }
 
  return arr
@@ -357,10 +360,9 @@ function drawFlood(deck){
  return deck.pop()
 }
 
-function drawVillage(){
- return {name:"集落",point:0}
+function drawVillage(open=false){
+ return {name:"集落", point:0, open:open}
 }
-
 
 
 function createHands(buildDeck){
@@ -574,6 +576,25 @@ if(floodSide){
   // =========================
   newState.floodLoseHistory[floodSide].push(i)
 
+  // =========================
+// ★ 大洪水２テストコード
+// =========================
+
+// p1を強制的に5敗にする
+
+
+/* if(newState.floodedDistricts.length === 0){
+  console.log("テスト発火：大洪水②")
+
+newState.floodLoseHistory[floodSide] = [0,2,3,5,6]
+}
+
+// 確認ログ
+console.log("テスト: p1履歴", newState.floodLoseHistory.p1)
+ */
+
+//←大洪水２テストここまで
+
 
  
 
@@ -583,6 +604,24 @@ console.log("履歴p2", newState.floodLoseHistory.p2)
 
 console.log("連続判定p1", hasThreeConsecutive(newState.floodLoseHistory.p1))
 console.log("連続判定p2", hasThreeConsecutive(newState.floodLoseHistory.p2))
+
+// =========================
+// ★ 大洪水②（5敗）
+// =========================
+
+if(newState.floodLoseHistory.p1.length >= 5){
+  newState.bigFlood = true
+  newState.bigFloodLoser = "p1"
+  newState.bigFloodDistricts = newState.floodLoseHistory.p1.slice(-5)
+    newState.bigFloodType = "total"   // ←追加
+}
+
+if(newState.floodLoseHistory.p2.length >= 5){
+  newState.bigFlood = true
+  newState.bigFloodLoser = "p2"
+  newState.bigFloodDistricts = newState.floodLoseHistory.p2.slice(-5)
+    newState.bigFloodType = "total"   // ←追加
+}
 
 
   // =========================
@@ -606,12 +645,14 @@ if(p1Seq){
   newState.bigFlood = true
   newState.bigFloodLoser = "p1"
   newState.bigFloodDistricts = p1Seq
+  newState.bigFloodType = "chain"   // ←追加
 }
 
 if(p2Seq){
   newState.bigFlood = true
   newState.bigFloodLoser = "p2"
   newState.bigFloodDistricts = p2Seq
+  newState.bigFloodType = "chain"   // ←追加
 }
 }
 /* 義援金対象（洪水で負けた側） */
@@ -637,7 +678,7 @@ cards.forEach(c=>{
  if(c?.name === "集落"){
   washed++
 
-  // ⭐ここが重要
+  // 流された集落
   c.flooded = true
  }
 
@@ -647,8 +688,36 @@ cards.forEach(c=>{
 })
   d[floodSide] = remain
 
- }
+  // ⭐ 反対側（生き残り側）にフラグ
+  const safeSide = floodSide === "p1" ? "p2" : "p1"
+  const safeCards = d[safeSide] || []
 
+  safeCards.forEach(c=>{
+    if(c?.name === "集落" && !c.flooded){
+      c.survived = true   
+    }
+  })
+}
+// =========================
+// 引き分け処理（両方生き残り）
+// =========================
+if(!floodSide){
+
+  const p1Cards = Array.isArray(d.p1) ? d.p1 : Object.values(d.p1 || {})
+  const p2Cards = Array.isArray(d.p2) ? d.p2 : Object.values(d.p2 || {})
+
+  p1Cards.forEach(c=>{
+    if(c?.name === "集落" && !c.flooded){
+      c.survived = true
+    }
+  })
+
+  p2Cards.forEach(c=>{
+    if(c?.name === "集落" && !c.flooded){
+      c.survived = true
+    }
+  })
+}
 
  /* --------------------
     ログ
@@ -663,11 +732,11 @@ cards.forEach(c=>{
 
 
  /* --------------------
-   洪水7回でゲーム終了
+   洪水ｎ回でゲーム終了
 -------------------- */
 
 if(
-  newState.floodedDistricts.length >= 7 ||
+  newState.floodedDistricts.length >= 6 ||
   newState.bigFlood
 ){
 
@@ -678,8 +747,8 @@ if(
 
   const d = newState.districts[i] || {p1:[],p2:[]}
 
-p1Settlements += (d.p1 || []).filter(c=>c?.name==="集落" && !c.flooded).length
-p2Settlements += (d.p2 || []).filter(c=>c?.name==="集落" && !c.flooded).length
+p1Settlements += calcSettlementScore(d.p1 || [])
+p2Settlements += calcSettlementScore(d.p2 || [])
 
  }
 
@@ -692,18 +761,28 @@ if(newState.bigFlood){
 
 const d = newState.bigFloodDistricts || []
 
-const areaText = d.length
-  ? d.map(x => x+1).join("・")
-  : "不明"
+  const areaText = d.length
+    ? d.map(x => x+1).join("・")
+    : "不明"
 
-  if(newState.bigFloodLoser === "p1"){
-    result = "西岸で大洪水（地区"+areaText+"）が起きました。西岸の敗北です"
+  if(newState.bigFloodType === "total"){
+    // ⭐ 大洪水②（累計）
+    if(newState.bigFloodLoser === "p1"){
+      result = "西岸ではあまりに多くの地区を失いました。西岸プレイヤーの負けです"
+    }else{
+      result = "東岸ではあまりに多くの地区を失いました。東岸プレイヤーの負けです"
+    }
+
   }else{
-    result = "東岸で大洪水（地区"+areaText+"）が起きました。東岸の敗北です"
+    // ⭐ 大洪水①（連続）
+    if(newState.bigFloodLoser === "p1"){
+      result = "西岸で大洪水（地区"+areaText+"）が起きました。西岸の敗北です"
+    }else{
+      result = "東岸で大洪水（地区"+areaText+"）が起きました。東岸の敗北です"
+    }
   }
 
   newState.logs.unshift(result)
-
 }else{
 
   // =========================
@@ -717,8 +796,8 @@ const areaText = d.length
 
     const d = newState.districts[i] || {p1:[],p2:[]}
 
-p1Settlements += (d.p1 || []).filter(c=>c?.name==="集落" && !c.flooded).length
-p2Settlements += (d.p2 || []).filter(c=>c?.name==="集落" && !c.flooded).length
+p1Settlements += calcSettlementScore(d.p1 || [])
+p2Settlements += calcSettlementScore(d.p2 || [])
   }
 
   if(p1Settlements > p2Settlements)
@@ -792,6 +871,7 @@ newState.currentPlayer = reliefIndex + 1
 
 set(ref(db,"rooms/"+roomId+"/state"),newState)
 }
+
 
 
 /* 大洪水判定 */
@@ -982,29 +1062,36 @@ if(state.bigFlood){
 
    const div=document.createElement("div")
 
- if(mySide==="p1" || d.revealed || isGameOver){
-
+if(mySide==="p1" || c.open || d.revealed || isGameOver){
   if(style){
 
    if(c.name === "集落"){
 
   // ⭐ 流出してるか判定
-  if(c.flooded){
+   if(c.flooded){
+    // 流出 → 黒
     div.innerHTML = `<span style="color:black; font-size:20px;">★</span>`
+
+  }else if(c.survived){
+    // ⭐ 生き残り → 赤
+    div.innerHTML = `<span style="color:red; font-size:20px;">★</span>`
+
   }else{
+    // 通常 → 元の色
     div.innerHTML = `<span style="color:${style.color}; font-size:20px;">${style.text}</span>`
   }
+    }else{
+    // ⭐ これが消えてた！！（治水カード表示）
+    div.innerHTML = `
+      <div class="districtSymbol"
+        style="
+          background:${style.bg};
+          color:${style.color};
+        ">
+        ${style.text}
+      </div>
+    `
 
-}else{
-  div.innerHTML = `
-    <div class="districtSymbol"
-      style="
-        background:${style.bg};
-        color:${style.color};
-      ">
-      ${style.text}
-    </div>
-  `
 }
 
   }else{
@@ -1025,29 +1112,37 @@ if(state.bigFlood){
 
    const div=document.createElement("div")
 
-if(mySide==="p2" || d.revealed || isGameOver){
+if(mySide==="p2" || c.open || d.revealed || isGameOver){
 
   if(style){
 
    if(c.name === "集落"){
 
   // ⭐ 流出してるか判定
-  if(c.flooded){
+   if(c.flooded){
+    // 流出 → 黒
     div.innerHTML = `<span style="color:black; font-size:20px;">★</span>`
+
+  }else if(c.survived){
+    // ⭐ 生き残り → 赤
+    div.innerHTML = `<span style="color:red; font-size:20px;">★</span>`
+
   }else{
+    // 通常 → 元の色
     div.innerHTML = `<span style="color:${style.color}; font-size:20px;">${style.text}</span>`
   }
+    }else{
+    // ⭐ これが消えてた！！（治水カード表示）
+    div.innerHTML = `
+      <div class="districtSymbol"
+        style="
+          background:${style.bg};
+          color:${style.color};
+        ">
+        ${style.text}
+      </div>
+    `
 
-}else{
-  div.innerHTML = `
-    <div class="districtSymbol"
-      style="
-        background:${style.bg};
-        color:${style.color};
-      ">
-      ${style.text}
-    </div>
-  `
 }
 
   }else{
@@ -1515,7 +1610,7 @@ overlay.className = "reliefOverlay"
     }else{
       const card = newState.buildDeck.pop()
       newState.hands[playerNumber-1].push(card)
-      newState.logs.unshift("義援金：" + card.name + "を獲得")
+      newState.logs.unshift("義援金：治水カードを獲得")
     }
 
     newState.relief = null
@@ -1590,6 +1685,31 @@ function showWaitingMessage(){
   div.innerText = "相手が義援金を選択中です..."
 
   document.body.appendChild(div)
+}
+
+
+/* 点数関数 */
+function calcSettlementScore(cards){
+
+  let score = 0
+
+  cards.forEach(c=>{
+
+    if(c?.name !== "集落") return
+
+    if(c.flooded){
+      score += 0
+
+    }else if(c.survived){
+      score += 2
+
+    }else{
+      score += 1
+    }
+
+  })
+
+  return score
 }
 
 </script>
